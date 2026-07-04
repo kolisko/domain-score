@@ -25,7 +25,8 @@ domain-score update
 ```
 
 By default, `scan` prints a colorized aligned console table to stdout, one row
-per check. Use `--no-color` to disable ANSI colors.
+per check, sorted by check weight descending. Use `--no-color` to disable ANSI
+colors.
 
 The required argument after `scan` is the domain to audit. Pass a bare domain
 such as `example.com`, or a URL such as `https://example.com`; Domain Score
@@ -39,6 +40,7 @@ Useful flags:
 - `--disable check.id`: disable one or more checks.
 - `--weights weights.yml`: override scoring weights.
 - `--format console,json,md`: choose output formats. Default is `console`.
+- `--sort weight|status|category|id|none`: sort console and Markdown check rows. Default is `weight`.
 - `--out -`: print selected report formats to stdout.
 
 Public third-party checks that do not need user API keys run in the default

@@ -36,6 +36,7 @@ type scanFlags struct {
 	userAgent  string
 	weights    string
 	noColor    bool
+	sort       string
 }
 
 func main() {
@@ -98,6 +99,9 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 					return err
 				}
 			}
+			if !report.IsSortMode(flags.sort) {
+				return fmt.Errorf("unsupported sort %q; use weight, status, category, id, or none", flags.sort)
+			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), flags.timeout*time.Duration(4))
 			defer cancel()
 			r, err := runner.Run(ctx, target, runner.Options{
@@ -126,6 +130,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().StringVar(&flags.userAgent, "user-agent", "", "Custom User-Agent")
 	cmd.Flags().StringVar(&flags.weights, "weights", "", "YAML file overriding check weights: weights: {check.id: 3}")
 	cmd.Flags().BoolVar(&flags.noColor, "no-color", false, "Disable ANSI colors in console output")
+	cmd.Flags().StringVar(&flags.sort, "sort", "weight", "Sort console/markdown check rows: weight, status, category, id, none")
 	return cmd
 }
 
@@ -145,10 +150,10 @@ func writeOutputs(r audit.Report, flags scanFlags) error {
 			data, err = report.JSON(r)
 			name = "report.json"
 		case "md", "markdown":
-			data = report.Markdown(r)
+			data = report.MarkdownWithOptions(r, report.MarkdownOptions{Sort: flags.sort})
 			name = "report.md"
 		case "console", "text":
-			data = report.Console(r, report.ConsoleOptions{Color: !flags.noColor})
+			data = report.Console(r, report.ConsoleOptions{Color: !flags.noColor, Sort: flags.sort})
 			name = "report.txt"
 		default:
 			return fmt.Errorf("unsupported format %q", f)

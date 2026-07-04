@@ -9,7 +9,15 @@ import (
 	"github.com/kolisko/domain-score/internal/audit"
 )
 
+type MarkdownOptions struct {
+	Sort string
+}
+
 func Markdown(r audit.Report) []byte {
+	return MarkdownWithOptions(r, MarkdownOptions{Sort: SortWeight})
+}
+
+func MarkdownWithOptions(r audit.Report, opts MarkdownOptions) []byte {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "# Domain Score report: %s\n\n", r.Target.Domain)
 	fmt.Fprintf(&b, "- Generated: %s\n", r.GeneratedAt.Format("2006-01-02 15:04:05 UTC"))
@@ -31,7 +39,7 @@ func Markdown(r audit.Report) []byte {
 	fmt.Fprintln(&b, "\n## Check table")
 	fmt.Fprintln(&b, "| PASS | WARN | FAIL | ERROR | N/A | Category | Check | Weight | Recommendation |")
 	fmt.Fprintln(&b, "|:---:|:---:|:---:|:---:|:---:|---|---|---:|---|")
-	for _, res := range r.Results {
+	for _, res := range sortedResults(r.Results, opts.Sort) {
 		pass, warn, fail, errMark, na := markdownStatusMarks(res.Status)
 		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | `%s` | `%s` %s | %d | %s |\n",
 			pass,
@@ -68,7 +76,7 @@ func Markdown(r audit.Report) []byte {
 	}
 
 	fmt.Fprintln(&b, "\n## All checks")
-	for _, res := range r.Results {
+	for _, res := range sortedResults(r.Results, opts.Sort) {
 		fmt.Fprintf(&b, "### %s `%s`\n\n", res.Title, res.CheckID)
 		fmt.Fprintf(&b, "- Category: `%s`\n", res.Category)
 		fmt.Fprintf(&b, "- Mode: `%s`\n", res.Mode)

@@ -10,6 +10,7 @@ import (
 
 type ConsoleOptions struct {
 	Color bool
+	Sort  string
 }
 
 func Console(r audit.Report, opts ConsoleOptions) []byte {
@@ -17,7 +18,7 @@ func Console(r audit.Report, opts ConsoleOptions) []byte {
 	fmt.Fprintf(&b, "Domain Score: %s  score=%d/100 grade=%s profile=%s aggressive=%t\n\n", r.Target.Domain, r.Score.Overall, r.Score.Grade, r.Profile, r.Aggressive)
 	fmt.Fprintf(&b, "%-6s  %-22s  %-42s  %-8s  %s\n", "STATUS", "CATEGORY", "CHECK", "WEIGHT", "TITLE")
 	fmt.Fprintf(&b, "%-6s  %-22s  %-42s  %-8s  %s\n", "------", "----------------------", "------------------------------------------", "------", "-----")
-	for _, res := range r.Results {
+	for _, res := range sortedResults(r.Results, opts.Sort) {
 		fmt.Fprintf(&b, "%s  %-22s  %-42s  %6d    %s\n",
 			consoleStatusCell(res.Status, opts.Color, 6),
 			truncate(res.Category, 22),

@@ -27,6 +27,18 @@ func TestConsoleRendersAlignedStatusRows(t *testing.T) {
 	}
 }
 
+func TestConsoleSortsByWeightByDefault(t *testing.T) {
+	out := string(Console(sampleReport(), ConsoleOptions{Color: false}))
+
+	assertOrder(t, out, "PASS    dns", "WARN    http_security", "FAIL    seo", "N/A     reputation", "ERROR   transparency")
+}
+
+func TestConsoleCanSortByStatus(t *testing.T) {
+	out := string(Console(sampleReport(), ConsoleOptions{Color: false, Sort: SortStatus}))
+
+	assertOrder(t, out, "FAIL    seo", "ERROR   transparency", "WARN    http_security", "PASS    dns", "N/A     reputation")
+}
+
 func TestConsoleColorizesStatusCells(t *testing.T) {
 	out := string(Console(sampleReport(), ConsoleOptions{Color: true}))
 
@@ -59,6 +71,8 @@ func TestMarkdownIncludesStatusMatrix(t *testing.T) {
 			t.Fatalf("markdown output missing %q:\n%s", want, out)
 		}
 	}
+
+	assertOrder(t, out, "`dns.a_record`", "`http.hsts`", "`seo.title`", "`reputation.virustotal`", "`transparency.rdap`")
 }
 
 func sampleReport() audit.Report {
@@ -118,5 +132,20 @@ func sampleReport() audit.Report {
 				Weight:   3,
 			},
 		},
+	}
+}
+
+func assertOrder(t *testing.T, text string, values ...string) {
+	t.Helper()
+	last := -1
+	for _, value := range values {
+		next := strings.Index(text, value)
+		if next == -1 {
+			t.Fatalf("output missing %q:\n%s", value, text)
+		}
+		if next < last {
+			t.Fatalf("%q appeared before previous value in output:\n%s", value, text)
+		}
+		last = next
 	}
 }
