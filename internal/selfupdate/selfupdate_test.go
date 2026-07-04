@@ -39,6 +39,7 @@ func TestCompareVersions(t *testing.T) {
 		want int
 	}{
 		{a: "v0.2.3", b: "v0.2.4", want: -1},
+		{a: "0.2.4", b: "v0.2.4", want: 0},
 		{a: "v0.2.10", b: "v0.2.9", want: 1},
 		{a: "v1.0.0", b: "v1.0.0", want: 0},
 	}
@@ -47,6 +48,33 @@ func TestCompareVersions(t *testing.T) {
 		if got != test.want {
 			t.Fatalf("CompareVersions(%q, %q)=%d, want %d", test.a, test.b, got, test.want)
 		}
+	}
+}
+
+func TestIsReleaseVersionAcceptsGoReleaserVersionWithoutV(t *testing.T) {
+	if !IsReleaseVersion("0.6.5") {
+		t.Fatal("expected bare GoReleaser version to be treated as release version")
+	}
+}
+
+func TestUpdateSkipsSameBareCurrentVersion(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"tag_name":"v0.6.5","assets":[]}`))
+	}))
+	defer server.Close()
+
+	var out bytes.Buffer
+	err := Update(context.Background(), Config{
+		CurrentVersion: "0.6.5",
+		APIURL:         server.URL,
+		Client:         server.Client(),
+	}, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "already up to date") {
+		t.Fatalf("expected already up to date output, got:\n%s", out.String())
 	}
 }
 

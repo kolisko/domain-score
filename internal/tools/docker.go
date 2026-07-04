@@ -151,24 +151,29 @@ func runContainer(ctx context.Context, target audit.Target, image string, select
 	if len(target.URLs) > 0 {
 		url = target.URLs[0]
 	}
-	args := DockerRunArgs(image, cacheDir, target.Domain, url, selected)
+	cidFile := filepath.Join(cacheDir, ".container.id")
+	_ = os.Remove(cidFile)
+	args := DockerRunArgs(image, cacheDir, target.Domain, url, selected, cidFile)
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if ctx.Err() != nil {
+		cleanupContainer(cidFile)
 		return fmt.Errorf("tools container timed out: %w", ctx.Err())
 	}
 	if err != nil {
+		cleanupContainer(cidFile)
 		return fmt.Errorf("tools container failed: %v", err)
 	}
 	return nil
 }
 
-func DockerRunArgs(image string, cacheDir string, domain string, url string, selected []string) []string {
+func DockerRunArgs(image string, cacheDir string, domain string, url string, selected []string, cidFile string) []string {
 	return []string{
 		"run",
 		"--rm",
+		"--cidfile", cidFile,
 		"--read-only",
 		"--tmpfs", "/tmp",
 		"--network", "bridge",
@@ -180,6 +185,26 @@ func DockerRunArgs(image string, cacheDir string, domain string, url string, sel
 		"--url", url,
 		"--tools", strings.Join(selected, ","),
 		"--out", "/work",
+	}
+}
+
+func cleanupContainer(cidFile string) {
+	data, err := os.ReadFile(cidFile)
+	if err != nil {
+		return
+	}
+	id := strings.TrimSpace(string(data))
+	if id == "" {
+		return
+	}
+	statusf("stopping tools container %s", id)
+	cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(cleanupCtx, "docker", "rm", "-f", id)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		statusf("failed to stop tools container %s: %v", id, err)
 	}
 }
 

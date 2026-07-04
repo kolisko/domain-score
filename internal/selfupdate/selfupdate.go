@@ -173,7 +173,7 @@ func Update(ctx context.Context, config Config, out io.Writer) error {
 }
 
 func IsReleaseVersion(version string) bool {
-	version = strings.TrimSpace(version)
+	version = normalizeVersion(version)
 	return strings.HasPrefix(version, "v") && len(version) > 1 && version[1] >= '0' && version[1] <= '9'
 }
 
@@ -231,7 +231,7 @@ func withDefaults(config Config) Config {
 }
 
 func versionParts(version string) []int {
-	version = strings.TrimPrefix(strings.TrimSpace(version), "v")
+	version = strings.TrimPrefix(normalizeVersion(version), "v")
 	version = strings.SplitN(version, "-", 2)[0]
 	fields := strings.Split(version, ".")
 	parts := make([]int, 0, len(fields))
@@ -243,6 +243,17 @@ func versionParts(version string) []int {
 		parts = append(parts, value)
 	}
 	return parts
+}
+
+func normalizeVersion(version string) string {
+	version = strings.TrimSpace(version)
+	if version == "" || version == "dev" {
+		return version
+	}
+	if version[0] >= '0' && version[0] <= '9' {
+		return "v" + version
+	}
+	return version
 }
 
 func findAsset(assets []Asset, name string) (Asset, bool) {

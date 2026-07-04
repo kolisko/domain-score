@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -49,6 +51,9 @@ type scanFlags struct {
 }
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	root := &cobra.Command{
 		Use:   "domain-score",
 		Short: "Audit publicly visible domain security, SEO, performance and AI-readiness signals.",
@@ -67,7 +72,7 @@ such as example.com, or a URL such as https://example.com.`,
 		SilenceErrors: true,
 	}
 	root.AddCommand(scanCommand(), toolsCommand(), listChecksCommand(), explainCommand(), updateCommand(), versionCommand())
-	if err := root.Execute(); err != nil {
+	if err := root.ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

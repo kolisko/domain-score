@@ -87,3 +87,70 @@ exit 0
 		}
 	}
 }
+
+func TestRunCleansDockerContainerOnTimeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake docker shell script is POSIX-only")
+	}
+	binDir := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "docker.log")
+	dockerPath := filepath.Join(binDir, "docker")
+	script := `#!/usr/bin/env sh
+set -eu
+printf '%s\n' "$*" >> "` + logPath + `"
+case "$1 $2" in
+  "version --format")
+    echo "24.0.0"
+    exit 0
+    ;;
+  "image inspect")
+    exit 0
+    ;;
+esac
+if [ "$1" = "run" ]; then
+  cidfile=""
+  prev=""
+  for arg in "$@"; do
+    if [ "$prev" = "--cidfile" ]; then
+      cidfile="$arg"
+      break
+    fi
+    prev="$arg"
+  done
+  printf '%s\n' "fake-container" > "$cidfile"
+  sleep 5
+  exit 0
+fi
+if [ "$1" = "rm" ]; then
+  exit 0
+fi
+exit 0
+`
+	if err := os.WriteFile(dockerPath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	oldPath := os.Getenv("PATH")
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+
+	got, err := Run(context.Background(), audit.Target{Domain: "example.com", URLs: []string{"https://example.com"}}, Options{
+		Tools:    "nuclei",
+		Image:    "ghcr.io/kolisko/domain-score-tools:vtest",
+		Pull:     PullAuto,
+		Timeout:  50 * time.Millisecond,
+		CacheDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Observation.Errors) == 0 {
+		t.Fatal("expected timeout error in observation")
+	}
+	logData, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log := string(logData)
+	if !strings.Contains(log, "rm -f fake-container") {
+		t.Fatalf("docker cleanup missing from log:\n%s", log)
+	}
+}

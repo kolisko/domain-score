@@ -8,10 +8,11 @@ import (
 )
 
 func TestDockerRunArgs(t *testing.T) {
-	got := DockerRunArgs("image:test", "/tmp/cache", "example.com", "https://example.com", []string{"subfinder", "httpx"})
+	got := DockerRunArgs("image:test", "/tmp/cache", "example.com", "https://example.com", []string{"subfinder", "httpx"}, "/tmp/cache/.container.id")
 	want := []string{
 		"run",
 		"--rm",
+		"--cidfile", "/tmp/cache/.container.id",
 		"--read-only",
 		"--tmpfs", "/tmp",
 		"--network", "bridge",
