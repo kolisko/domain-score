@@ -5,25 +5,25 @@ import (
 	"testing"
 )
 
-func TestDefaultImageUsesVersionTag(t *testing.T) {
+func TestDefaultImageUsesPinnedToolsDigest(t *testing.T) {
 	got := DefaultImage("v0.6.0")
-	want := "ghcr.io/kolisko/domain-score-tools:v0.6.0"
+	want := DefaultImageRef
 	if got != want {
 		t.Fatalf("DefaultImage = %q, want %q", got, want)
 	}
 }
 
-func TestDefaultImageAddsVPrefixForGoReleaserVersion(t *testing.T) {
+func TestDefaultImageIsDecoupledFromCLIVersion(t *testing.T) {
 	got := DefaultImage("0.6.0")
-	want := "ghcr.io/kolisko/domain-score-tools:v0.6.0"
+	want := DefaultImageRef
 	if got != want {
 		t.Fatalf("DefaultImage = %q, want %q", got, want)
 	}
 }
 
-func TestDefaultImageUsesLatestForDev(t *testing.T) {
+func TestDefaultImageDoesNotUseLatestForDev(t *testing.T) {
 	got := DefaultImage("dev")
-	want := "ghcr.io/kolisko/domain-score-tools:latest"
+	want := DefaultImageRef
 	if got != want {
 		t.Fatalf("DefaultImage = %q, want %q", got, want)
 	}

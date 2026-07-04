@@ -67,7 +67,7 @@ run_step() {
     log "still running ${name} ($((SECONDS - started))s)"
   done &
   local heartbeat_pid=$!
-  "$@" > "$stdout_file" 2> "$stderr_file"
+  "$@" > >(tee "$stdout_file") 2> >(tee "$stderr_file" >&2)
   local rc=$?
   kill "$heartbeat_pid" 2>/dev/null || true
   wait "$heartbeat_pid" 2>/dev/null || true
@@ -112,6 +112,9 @@ build_targets() {
   if [[ -s "${RAW}/amass.jsonl" ]]; then
     jq -r '.name? // empty' "${RAW}/amass.jsonl" >> "$targets" 2>/dev/null || true
   fi
+  if [[ -s "${RAW}/amass.txt" ]]; then
+    sed '/^[[:space:]]*$/d' "${RAW}/amass.txt" >> "$targets" 2>/dev/null || true
+  fi
   echo "$DOMAIN" >> "$targets"
   sort -u "$targets" -o "$targets"
   log "targets prepared: $(wc -l < "$targets" | tr -d ' ')"
@@ -140,8 +143,9 @@ if has_tool "subfinder"; then
 fi
 
 if has_tool "amass"; then
-  run_step "amass" "${RAW}/amass.stdout" "${RAW}/amass.stderr" \
-    amass enum -passive -d "$DOMAIN" -json "${RAW}/amass.jsonl"
+  run_step "amass" "${RAW}/amass.txt" "${RAW}/amass.stderr" \
+    amass enum -passive -d "$DOMAIN" -silent
+  pkill -f "/usr/local/bin/amass engine" 2>/dev/null || true
 fi
 
 TARGETS="$(build_targets)"
@@ -160,7 +164,7 @@ fi
 
 if has_tool "nuclei"; then
   run_step "nuclei" "${RAW}/nuclei.stdout" "${RAW}/nuclei.stderr" \
-    nuclei -l "$URLS" -jsonl -silent -templates /opt/nuclei-templates -severity low,medium,high,critical -rate-limit 5 -o "${RAW}/nuclei.jsonl"
+    nuclei -l "$URLS" -jsonl -templates /opt/nuclei-templates -severity low,medium,high,critical -rate-limit 5 -stats -stats-interval 30 -o "${RAW}/nuclei.jsonl"
 fi
 
 if has_tool "testssl"; then

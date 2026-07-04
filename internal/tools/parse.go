@@ -25,6 +25,7 @@ func ParseCache(cacheDir string) ([]audit.ToolFinding, []string) {
 		{"naabu.jsonl", parseNaabu},
 		{"nuclei.jsonl", parseNuclei},
 		{"amass.jsonl", parseAmass},
+		{"amass.txt", parseAmassText},
 		{"zap.json", parseZAP},
 		{"testssl.json", parseTestSSL},
 		{"internetnl.json", parseSimpleToolJSON("internetnl")},
@@ -163,6 +164,34 @@ func parseAmass(path string) ([]audit.ToolFinding, error) {
 			RawFile:  path,
 		}, true
 	})
+}
+
+func parseAmassText(path string) ([]audit.ToolFinding, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	out := []audit.ToolFinding{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		name := strings.TrimSpace(scanner.Text())
+		if name == "" || strings.ContainsAny(name, " \t") {
+			continue
+		}
+		out = append(out, audit.ToolFinding{
+			Source:   "external_tool",
+			Tool:     "amass",
+			Asset:    name,
+			Type:     "subdomain",
+			Severity: "info",
+			Title:    "Discovered attack-surface name",
+			Evidence: map[string]any{"name": name},
+			RawFile:  path,
+		})
+	}
+	return out, scanner.Err()
 }
 
 func parseZAP(path string) ([]audit.ToolFinding, error) {

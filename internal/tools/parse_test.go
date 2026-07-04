@@ -18,6 +18,7 @@ func TestParseCacheParsesToolOutputs(t *testing.T) {
 	writeTestFile(t, filepath.Join(raw, "httpx.jsonl"), `{"url":"https://app.example.com","status_code":200}`+"\n")
 	writeTestFile(t, filepath.Join(raw, "naabu.jsonl"), `{"host":"app.example.com","port":22}`+"\n")
 	writeTestFile(t, filepath.Join(raw, "nuclei.jsonl"), `{"template-id":"cve-test","matched-at":"https://app.example.com","info":{"name":"Test CVE","severity":"high"}}`+"\n")
+	writeTestFile(t, filepath.Join(raw, "amass.txt"), "admin.example.com\n")
 	writeTestFile(t, filepath.Join(raw, "zap.json"), `{"site":[{"alerts":[{"alert":"Missing Header","riskdesc":"Medium","url":"https://app.example.com","solution":"Add header"}]}]}`)
 	writeTestFile(t, filepath.Join(raw, "internetnl.json"), `[{"tool":"internetnl","title":"Internet.nl score","severity":"info"}]`)
 
@@ -25,8 +26,8 @@ func TestParseCacheParsesToolOutputs(t *testing.T) {
 	if len(errors) != 0 {
 		t.Fatalf("ParseCache errors = %#v", errors)
 	}
-	if len(findings) != 6 {
-		t.Fatalf("got %d findings, want 6: %#v", len(findings), findings)
+	if len(findings) != 7 {
+		t.Fatalf("got %d findings, want 7: %#v", len(findings), findings)
 	}
 	if findings[3].Tool != "nuclei" || findings[3].Severity != "high" {
 		t.Fatalf("unexpected nuclei finding: %#v", findings[3])

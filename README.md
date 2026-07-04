@@ -117,10 +117,18 @@ domain-score tools pull
 domain-score tools list
 ```
 
-The default image is `ghcr.io/kolisko/domain-score-tools:<domain-score-version>`.
-If the image is missing and `--tools-pull auto` is used, Domain Score pulls it
-automatically. Docker Desktop or Docker Engine must already be installed and
-running; Domain Score does not install Docker itself.
+The default image is an embedded, pinned GHCR digest. The current logical tools
+release is `ghcr.io/kolisko/domain-score-tools:tools-v0.1.0`, and the CLI uses
+the exact digest for that image by default instead of `latest` or the CLI
+version tag. If the image is missing and `--tools-pull auto` is used, Domain
+Score pulls it automatically. Docker Desktop or Docker Engine must already be
+installed and running; Domain Score does not install Docker itself.
+
+CLI releases and tools image releases are intentionally separate. A normal
+`v*` CLI release does not rebuild the tools image. The tools image is published
+only from the dedicated `tools-v*` image workflow or a manual image workflow
+run, which keeps CLI-only fixes fast and avoids changing scanner dependencies
+without intent.
 
 Supported tool aliases:
 
@@ -136,6 +144,10 @@ Raw tool outputs are cached under the user cache directory at
 `latest` cache for that domain. Active tools such as port scanning, Nuclei and
 Greenbone should only be used on domains and infrastructure you own or are
 authorized to test.
+
+The global `--tools-timeout` limits the whole Docker run. While tools run, their
+stdout and stderr are streamed to the console and also saved in `raw/`. Nuclei
+prints periodic stats during long template runs so the scan does not look stuck.
 
 ## Competitive Coverage
 

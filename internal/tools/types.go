@@ -9,6 +9,9 @@ import (
 const (
 	RuntimeDocker = "docker"
 
+	DefaultImageRef = "ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a"
+	DefaultImageTag = "tools-v0.1.0"
+
 	PullAuto   = "auto"
 	PullAlways = "always"
 	PullNever  = "never"
@@ -48,13 +51,7 @@ type Options struct {
 }
 
 func DefaultImage(version string) string {
-	tag := strings.TrimSpace(version)
-	if tag == "" || tag == "dev" {
-		tag = "latest"
-	} else if tag[0] >= '0' && tag[0] <= '9' {
-		tag = "v" + tag
-	}
-	return "ghcr.io/kolisko/domain-score-tools:" + tag
+	return DefaultImageRef
 }
 
 func NormalizeRuntime(runtime string) (string, error) {
