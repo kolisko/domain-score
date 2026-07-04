@@ -28,6 +28,25 @@ func Markdown(r audit.Report) []byte {
 		fmt.Fprintf(&b, "- `%s`: %d/100 (%d/%d weight, %d checks)\n", c, cs.Score, cs.PassedWeight, cs.TotalWeight, cs.Checks)
 	}
 
+	fmt.Fprintln(&b, "\n## Check table")
+	fmt.Fprintln(&b, "| PASS | WARN | FAIL | ERROR | N/A | Category | Check | Weight | Recommendation |")
+	fmt.Fprintln(&b, "|:---:|:---:|:---:|:---:|:---:|---|---|---:|---|")
+	for _, res := range r.Results {
+		pass, warn, fail, errMark, na := markdownStatusMarks(res.Status)
+		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | `%s` | `%s` %s | %d | %s |\n",
+			pass,
+			warn,
+			fail,
+			errMark,
+			na,
+			res.Category,
+			res.CheckID,
+			escapeTable(res.Title),
+			res.Weight,
+			escapeTable(shortRecommendation(res.Recommendation)),
+		)
+	}
+
 	fmt.Fprintln(&b, "\n## Top findings")
 	findings := append([]audit.Result(nil), r.Results...)
 	sort.SliceStable(findings, func(i, j int) bool {
@@ -64,4 +83,38 @@ func Markdown(r audit.Report) []byte {
 		fmt.Fprintln(&b)
 	}
 	return b.Bytes()
+}
+
+func markdownStatusMarks(status audit.Status) (string, string, string, string, string) {
+	switch status {
+	case audit.StatusPass:
+		return "x", "", "", "", ""
+	case audit.StatusWarn:
+		return "", "x", "", "", ""
+	case audit.StatusFail:
+		return "", "", "x", "", ""
+	case audit.StatusError:
+		return "", "", "", "x", ""
+	case audit.StatusNotApplicable:
+		return "", "", "", "", "x"
+	default:
+		return "", "", "", "", ""
+	}
+}
+
+func shortRecommendation(value string) string {
+	value = strings.TrimSpace(strings.ReplaceAll(value, "\n", " "))
+	if len(value) > 120 {
+		return value[:117] + "..."
+	}
+	if value == "" {
+		return "-"
+	}
+	return value
+}
+
+func escapeTable(value string) string {
+	value = strings.ReplaceAll(value, "|", "\\|")
+	value = strings.ReplaceAll(value, "\n", " ")
+	return value
 }

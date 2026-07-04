@@ -35,6 +35,7 @@ type scanFlags struct {
 	timeout    time.Duration
 	userAgent  string
 	weights    string
+	noColor    bool
 }
 
 func main() {
@@ -115,8 +116,8 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 			return writeOutputs(r, flags)
 		},
 	}
-	cmd.Flags().StringVar(&flags.format, "format", "json,md", "Comma-separated output formats: json,md")
-	cmd.Flags().StringVar(&flags.out, "out", ".", "Output directory, or '-' for stdout")
+	cmd.Flags().StringVar(&flags.format, "format", "console", "Comma-separated output formats: console,json,md")
+	cmd.Flags().StringVar(&flags.out, "out", "-", "Output directory, or '-' for stdout")
 	cmd.Flags().StringVar(&flags.profile, "profile", "safe", "Scan profile: safe, standard, aggressive")
 	cmd.Flags().BoolVar(&flags.aggressive, "aggressive", false, "Enable all aggressive checks and evidence collectors")
 	cmd.Flags().StringSliceVar(&flags.enable, "enable", nil, "Enable specific check IDs, including aggressive checks")
@@ -124,6 +125,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().DurationVar(&flags.timeout, "timeout", 8*time.Second, "Per-request timeout")
 	cmd.Flags().StringVar(&flags.userAgent, "user-agent", "", "Custom User-Agent")
 	cmd.Flags().StringVar(&flags.weights, "weights", "", "YAML file overriding check weights: weights: {check.id: 3}")
+	cmd.Flags().BoolVar(&flags.noColor, "no-color", false, "Disable ANSI colors in console output")
 	return cmd
 }
 
@@ -145,6 +147,9 @@ func writeOutputs(r audit.Report, flags scanFlags) error {
 		case "md", "markdown":
 			data = report.Markdown(r)
 			name = "report.md"
+		case "console", "text":
+			data = report.Console(r, report.ConsoleOptions{Color: !flags.noColor})
+			name = "report.txt"
 		default:
 			return fmt.Errorf("unsupported format %q", f)
 		}
@@ -152,7 +157,13 @@ func writeOutputs(r audit.Report, flags scanFlags) error {
 			return err
 		}
 		if flags.out == "-" {
-			fmt.Printf("--- %s ---\n%s\n", name, string(data))
+			if len(formats) > 1 {
+				fmt.Printf("--- %s ---\n", name)
+			}
+			fmt.Print(string(data))
+			if len(formats) > 1 {
+				fmt.Println()
+			}
 			continue
 		}
 		if err := os.WriteFile(filepath.Join(flags.out, name), data, 0o644); err != nil {

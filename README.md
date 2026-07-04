@@ -18,11 +18,14 @@ go install github.com/kolisko/domain-score/cmd/domain-score@latest
 domain-score scan example.com
 domain-score scan example.com --format json,md --out ./reports
 domain-score scan https://example.com --out - --format json
-domain-score scan example.com --aggressive --out ./reports/aggressive
+domain-score scan example.com --aggressive
 domain-score list-checks
 domain-score explain dns.dnssec_enabled
 domain-score update
 ```
+
+By default, `scan` prints a colorized aligned console table to stdout, one row
+per check. Use `--no-color` to disable ANSI colors.
 
 The required argument after `scan` is the domain to audit. Pass a bare domain
 such as `example.com`, or a URL such as `https://example.com`; Domain Score
@@ -35,6 +38,7 @@ Useful flags:
 - `--enable check.id`: enable one or more checks explicitly.
 - `--disable check.id`: disable one or more checks.
 - `--weights weights.yml`: override scoring weights.
+- `--format console,json,md`: choose output formats. Default is `console`.
 - `--out -`: print selected report formats to stdout.
 
 Public third-party checks that do not need user API keys run in the default
@@ -123,7 +127,7 @@ Result statuses:
 
 ## Output
 
-`report.json` is the stable automation format. `report.md` is optimized for humans and includes the overall grade, category scores, top findings and all check results.
+`console` is the default colorized stdout format. `report.json` is the stable automation format. `report.md` is optimized for humans and includes the overall grade, category scores, top findings, a status matrix table with one row per check, and detailed check sections.
 
 ## Development
 
