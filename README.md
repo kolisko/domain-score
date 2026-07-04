@@ -15,11 +15,18 @@ go install github.com/kolisko/domain-score/cmd/domain-score@latest
 ## Usage
 
 ```sh
+domain-score scan example.com
 domain-score scan example.com --format json,md --out ./reports
+domain-score scan https://example.com --out - --format json
 domain-score scan example.com --aggressive --out ./reports/aggressive
 domain-score list-checks
 domain-score explain dns.dnssec_enabled
+domain-score update
 ```
+
+The required argument after `scan` is the domain to audit. Pass a bare domain
+such as `example.com`, or a URL such as `https://example.com`; Domain Score
+extracts the hostname and audits that public domain.
 
 Useful flags:
 
@@ -37,6 +44,23 @@ weights:
   dns.dnssec_enabled: 5
   http.csp: 7
 ```
+
+## Updates
+
+Release binaries can update themselves:
+
+```sh
+domain-score update
+```
+
+The update command downloads the matching GitHub Release archive for your
+OS/architecture, shows download progress, verifies the GitHub asset sha256
+digest when available, extracts the `domain-score` binary, replaces the current
+executable, and cleans up temporary files.
+
+Release builds check the latest GitHub Release before running `scan`. If a newer
+release exists, the scan stops and asks you to run `domain-score update` first.
+Development builds with version `dev` skip this check.
 
 ## Safety Model
 

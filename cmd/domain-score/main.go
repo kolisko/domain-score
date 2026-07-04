@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,6 +16,7 @@ import (
 	"github.com/kolisko/domain-score/internal/checks"
 	"github.com/kolisko/domain-score/internal/report"
 	"github.com/kolisko/domain-score/internal/runner"
+	"github.com/kolisko/domain-score/internal/selfupdate"
 )
 
 var (
@@ -37,12 +39,23 @@ type scanFlags struct {
 
 func main() {
 	root := &cobra.Command{
-		Use:           "domain-score",
-		Short:         "Audit publicly visible domain security, SEO, performance and AI-readiness signals.",
+		Use:   "domain-score",
+		Short: "Audit publicly visible domain security, SEO, performance and AI-readiness signals.",
+		Long: `Domain Score audits one public domain at a time.
+
+Start with:
+  domain-score scan example.com
+
+The domain name is the required argument after "scan". Use a bare domain
+such as example.com, or a URL such as https://example.com.`,
+		Example: `  domain-score scan example.com
+  domain-score scan https://example.com --format json,md --out ./reports
+  domain-score scan example.com --aggressive
+  domain-score update`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.AddCommand(scanCommand(), listChecksCommand(), explainCommand(), versionCommand())
+	root.AddCommand(scanCommand(), listChecksCommand(), explainCommand(), updateCommand(), versionCommand())
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -52,10 +65,27 @@ func main() {
 func scanCommand() *cobra.Command {
 	flags := scanFlags{}
 	cmd := &cobra.Command{
-		Use:   "scan <domain>",
-		Short: "Run a domain audit",
-		Args:  cobra.ExactArgs(1),
+		Use:   "scan <domain-or-url>",
+		Short: "Run a domain audit for the given domain name",
+		Long: `Run a public audit for one domain.
+
+The required argument is the domain name to audit. You can pass either a bare
+domain such as example.com, or a URL such as https://example.com. Domain Score
+extracts the hostname and audits public DNS, TLS, HTTP, SEO, AI-readiness,
+performance and transparency signals.
+
+Default scans are safe/non-invasive. Aggressive checks run only with
+--aggressive, --profile aggressive, or explicit --enable check.id.`,
+		Example: `  domain-score scan example.com
+  domain-score scan https://example.com --format json,md --out ./reports
+  domain-score scan example.com --out - --format json
+  domain-score scan example.com --aggressive
+  domain-score scan example.com --enable aggressive.port_scan`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := ensureLatestVersion(cmd.Context()); err != nil {
+				return err
+			}
 			target, err := audit.ParseTarget(args[0])
 			if err != nil {
 				return err
@@ -175,6 +205,23 @@ func explainCommand() *cobra.Command {
 	}
 }
 
+func updateCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "update",
+		Short: "Download and install the latest GitHub Release binary",
+		Long: `Download the latest matching GitHub Release asset for this OS and
+architecture, verify the GitHub sha256 digest when available, extract the
+domain-score binary, and replace the currently running executable.`,
+		Example: `  domain-score update`,
+		Args:    cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
+			defer cancel()
+			return selfupdate.Update(ctx, selfUpdateConfig(), os.Stderr)
+		},
+	}
+}
+
 func versionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
@@ -182,6 +229,40 @@ func versionCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(cmd.OutOrStdout(), "domain-score %s (%s, %s)\n", version, commit, date)
 		},
+	}
+}
+
+func ensureLatestVersion(ctx context.Context) error {
+	if !selfupdate.IsReleaseVersion(version) {
+		return nil
+	}
+	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	result, err := selfupdate.Check(checkCtx, selfUpdateConfig())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: could not check latest domain-score release: %v\n", err)
+		return nil
+	}
+	if !result.Outdated {
+		return nil
+	}
+	return fmt.Errorf(`outdated domain-score binary
+
+current version: %s
+latest version:  %s
+
+this release binary will not run scans until it is updated:
+
+  domain-score update
+
+latest release:
+%s`, result.CurrentVersion, result.LatestVersion, result.LatestURL)
+}
+
+func selfUpdateConfig() selfupdate.Config {
+	return selfupdate.Config{
+		CurrentVersion: version,
+		Client:         &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
