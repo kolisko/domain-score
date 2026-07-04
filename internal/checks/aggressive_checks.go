@@ -61,8 +61,8 @@ func (AggressiveFingerprint) Meta() audit.CheckMeta {
 	return audit.CheckMeta{ID: "aggressive.framework_fingerprint", Title: "Framework/CMS fingerprint", Category: "aggressive", Mode: audit.ModeAggressive, Weight: 3, Severity: audit.SeverityMedium, Tags: []string{"fingerprint"}}
 }
 func (c AggressiveFingerprint) Run(_ context.Context, _ audit.Target, ev audit.SharedEvidence) audit.Result {
-	if len(ev.Aggressive.FrameworkSignals) > 0 {
-		return warn(c.Meta(), map[string]any{"signals": ev.Aggressive.FrameworkSignals}, "Omezte veřejné verze frameworků a ověřte známé CVE ručně.", 2)
+	if len(ev.Aggressive.FrameworkSignals) > 0 || len(ev.Aggressive.CVEHints) > 0 {
+		return warn(c.Meta(), map[string]any{"signals": ev.Aggressive.FrameworkSignals, "cve_hints": ev.Aggressive.CVEHints}, "Omezte veřejné verze frameworků a ověřte známé CVE ručně.", 2)
 	}
 	return pass(c.Meta(), nil, "")
 }

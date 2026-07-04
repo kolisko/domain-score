@@ -37,6 +37,13 @@ Useful flags:
 - `--weights weights.yml`: override scoring weights.
 - `--out -`: print selected report formats to stdout.
 
+Public third-party checks that do not need user API keys run in the default
+safe profile when available: Spamhaus DBL, SURBL, URLhaus host reputation,
+Shodan InternetDB, SSL Labs cached grade, Mozilla Observatory, Certificate
+Transparency and Microsoft 365 public tenant discovery. Checks that require a
+provider account, such as VirusTotal's domain API, report `not_applicable`
+unless the relevant environment variable is configured.
+
 Example weights file:
 
 ```yaml
@@ -66,6 +73,9 @@ Development builds with version `dev` skip this check.
 
 Safe checks are default and use normal public discovery: DNS queries, HTTP(S) requests, TLS handshakes, RDAP and Certificate Transparency lookups.
 
+Safe checks may also query public third-party reputation or grading sources that
+do not attack the target and do not require credentials from the user.
+
 Aggressive checks are opt-in and remain non-exploitative:
 
 - rate-limited crawl with a small URL cap
@@ -76,6 +86,19 @@ Aggressive checks are opt-in and remain non-exploitative:
 - static token-like hints from public HTML
 
 Domain Score does not perform brute force, denial of service, authenticated scanning, exploit delivery or state-changing actions.
+
+## Competitive Coverage
+
+Domain Score covers the public audit areas commonly advertised by hosted IT and
+security audit tools:
+
+- DNS and mail security: SPF, DKIM, DMARC, MTA-STS, TLS-RPT, BIMI, DNSSEC, CAA, IPv6, wildcard DNS.
+- TLS and web security: certificate validity, expiry, hostname, chain, protocol, ALPN, SSL Labs cached grade, HSTS, CSP, X-Frame/frame-ancestors and related headers.
+- Public exposure and CVE signals: Shodan InternetDB no-key service/CVE data, optional active port probing in aggressive mode, banner/framework CVE hints.
+- Reputation: Spamhaus DBL, SURBL, URLhaus, and optional VirusTotal with `DOMAIN_SCORE_VIRUSTOTAL_API_KEY`.
+- Microsoft 365: public tenant discovery via MX/TXT/autodiscover/OpenID signals and a clear legacy-auth verification note.
+- Certificate Transparency subdomains and shadow-IT inventory signals.
+- SEO, performance, accessibility and AI-readiness checks that are usually outside pure security scanners.
 
 ## Check API
 

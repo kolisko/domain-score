@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -46,6 +47,9 @@ func Collect(ctx context.Context, target audit.Target, opts Options) audit.Share
 	ev.SecurityText = fetchText(ctx, base+"/.well-known/security.txt", opts)
 	ev.RDAP = collectRDAP(ctx, target.Domain, opts)
 	ev.CT = collectCT(ctx, target.Domain, opts)
+	ev.M365 = collectM365(ctx, target.Domain, ev.DNS, opts)
+	ev.Reputation = collectReputation(ctx, target.Domain, opts)
+	ev.External = collectExternal(ctx, target.Domain, ev.DNS, opts)
 	if opts.Aggressive {
 		ev.Aggressive = collectAggressive(ctx, target.Domain, ev, opts)
 	}
@@ -71,6 +75,7 @@ func collectDNS(domain string, timeout time.Duration) audit.DNSObservation {
 		{"_mta-sts." + domain, dns.TypeTXT},
 		{"_smtp._tls." + domain, dns.TypeTXT},
 		{"default._bimi." + domain, dns.TypeTXT},
+		{"autodiscover." + domain, dns.TypeCNAME},
 		{"www." + domain, dns.TypeA},
 		{fmt.Sprintf("_domain-score-%d.%s", time.Now().UnixNano(), domain), dns.TypeA},
 	} {
@@ -110,6 +115,13 @@ func collectDNS(domain string, timeout time.Duration) audit.DNSObservation {
 					o.BIMITXT = append(o.BIMITXT, txt)
 				default:
 					o.TXT = append(o.TXT, txt)
+					if strings.HasPrefix(strings.ToLower(txt), "ms=") {
+						o.MSVerify = append(o.MSVerify, txt)
+					}
+				}
+			case *dns.CNAME:
+				if q.name == "autodiscover."+domain {
+					o.Autodiscover = append(o.Autodiscover, strings.TrimSuffix(rr.Target, "."))
 				}
 			case *dns.CAA:
 				o.CAA = append(o.CAA, fmt.Sprintf("%d %s %s", rr.Flag, rr.Tag, rr.Value))
@@ -125,7 +137,31 @@ func collectDNS(domain string, timeout time.Duration) audit.DNSObservation {
 	sort.Strings(o.A)
 	sort.Strings(o.AAAA)
 	sort.Strings(o.NS)
+	collectDKIM(domain, timeout, &o)
 	return o
+}
+
+func collectDKIM(domain string, timeout time.Duration, o *audit.DNSObservation) {
+	selectors := []string{"default", "google", "selector1", "selector2", "k1", "s1", "s2", "mail", "dkim", "mandrill", "sendgrid", "mailgun"}
+	for _, selector := range selectors {
+		name := selector + "._domainkey." + domain
+		msg, err := dnsQuery(name, dns.TypeTXT, timeout)
+		if err != nil || msg == nil {
+			continue
+		}
+		for _, ans := range msg.Answer {
+			rr, ok := ans.(*dns.TXT)
+			if !ok {
+				continue
+			}
+			txt := strings.Join(rr.Txt, "")
+			if strings.Contains(strings.ToLower(txt), "v=dkim1") || strings.Contains(strings.ToLower(txt), "k=rsa") || strings.Contains(strings.ToLower(txt), "p=") {
+				o.DKIMFound = append(o.DKIMFound, selector)
+				o.DKIMTXT = append(o.DKIMTXT, txt)
+			}
+		}
+	}
+	sort.Strings(o.DKIMFound)
 }
 
 func dnsQuery(name string, qtype uint16, timeout time.Duration) (*dns.Msg, error) {
@@ -418,6 +454,297 @@ func collectCT(ctx context.Context, domain string, opts Options) audit.CTObserva
 	return audit.CTObservation{KnownNames: out}
 }
 
+func collectM365(ctx context.Context, domain string, dnsObs audit.DNSObservation, opts Options) audit.M365Observation {
+	o := audit.M365Observation{LegacyAuthProbe: "not_tested_without_credentials"}
+	for _, mx := range dnsObs.MX {
+		lower := strings.ToLower(mx)
+		if strings.Contains(lower, "mail.protection.outlook.com") || strings.Contains(lower, "outlook.com") {
+			o.MXSignals = append(o.MXSignals, mx)
+		}
+	}
+	for _, txt := range dnsObs.MSVerify {
+		o.TXTSignals = append(o.TXTSignals, txt)
+	}
+	o.Autodiscover = append(o.Autodiscover, dnsObs.Autodiscover...)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://login.microsoftonline.com/"+url.PathEscape(domain)+"/v2.0/.well-known/openid-configuration", nil)
+	if err == nil {
+		req.Header.Set("User-Agent", opts.UserAgent)
+		resp, err := (&http.Client{Timeout: opts.Timeout}).Do(req)
+		if err != nil {
+			o.Error = err.Error()
+		} else {
+			o.OpenIDStatusCode = resp.StatusCode
+			var raw map[string]any
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 200_000))
+			_ = resp.Body.Close()
+			if json.Unmarshal(body, &raw) == nil {
+				o.OpenIDIssuer = fmt.Sprint(raw["issuer"])
+			}
+		}
+	}
+	o.Detected = len(o.MXSignals) > 0 || len(o.TXTSignals) > 0 || len(o.Autodiscover) > 0 || o.OpenIDStatusCode == 200
+	return o
+}
+
+func collectReputation(ctx context.Context, domain string, opts Options) audit.ReputationObservation {
+	return audit.ReputationObservation{
+		SpamhausDBL: queryDomainDNSBL(domain, "dbl.spamhaus.org", opts.Timeout),
+		SURBL:       queryDomainDNSBL(domain, "multi.surbl.org", opts.Timeout),
+		URLHaus:     collectURLHaus(ctx, domain, opts),
+		VirusTotal:  collectVirusTotal(ctx, domain, opts),
+	}
+}
+
+func queryDomainDNSBL(domain string, zone string, timeout time.Duration) audit.ReputationRecord {
+	record := audit.ReputationRecord{Checked: true}
+	msg, err := dnsQuery(domain+"."+zone, dns.TypeA, timeout)
+	if err != nil {
+		record.Status = "not_listed"
+		return record
+	}
+	for _, ans := range msg.Answer {
+		if rr, ok := ans.(*dns.A); ok {
+			record.Listed = true
+			record.Status = "listed"
+			record.Categories = append(record.Categories, rr.A.String())
+		}
+	}
+	if !record.Listed {
+		record.Status = "not_listed"
+	}
+	return record
+}
+
+func collectURLHaus(ctx context.Context, domain string, opts Options) audit.ReputationRecord {
+	record := audit.ReputationRecord{Checked: true, URL: "https://urlhaus-api.abuse.ch/v1/host/"}
+	form := url.Values{"host": {domain}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, record.URL, strings.NewReader(form.Encode()))
+	if err != nil {
+		record.Error = err.Error()
+		return record
+	}
+	req.Header.Set("User-Agent", opts.UserAgent)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := (&http.Client{Timeout: opts.Timeout}).Do(req)
+	if err != nil {
+		record.Error = err.Error()
+		return record
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 500_000))
+	var raw map[string]any
+	if err := json.Unmarshal(body, &raw); err != nil {
+		record.Error = err.Error()
+		return record
+	}
+	status := fmt.Sprint(raw["query_status"])
+	record.Status = status
+	if status == "ok" {
+		record.Listed = true
+		record.Categories = append(record.Categories, "urlhaus_host")
+	}
+	return record
+}
+
+func collectVirusTotal(ctx context.Context, domain string, opts Options) audit.ReputationRecord {
+	record := audit.ReputationRecord{Checked: false, URL: "https://www.virustotal.com/api/v3/domains/" + domain}
+	key := strings.TrimSpace(os.Getenv("DOMAIN_SCORE_VIRUSTOTAL_API_KEY"))
+	if key == "" {
+		record.Status = "api_key_required"
+		record.Error = "VirusTotal domain reputation requires DOMAIN_SCORE_VIRUSTOTAL_API_KEY in a local CLI."
+		return record
+	}
+	record.Checked = true
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, record.URL, nil)
+	if err != nil {
+		record.Error = err.Error()
+		return record
+	}
+	req.Header.Set("x-apikey", key)
+	req.Header.Set("User-Agent", opts.UserAgent)
+	resp, err := (&http.Client{Timeout: opts.Timeout}).Do(req)
+	if err != nil {
+		record.Error = err.Error()
+		return record
+	}
+	defer resp.Body.Close()
+	var raw map[string]any
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 500_000))
+	if err := json.Unmarshal(body, &raw); err != nil {
+		record.Error = err.Error()
+		return record
+	}
+	record.Status = fmt.Sprintf("http_%d", resp.StatusCode)
+	if data, ok := raw["data"].(map[string]any); ok {
+		if attrs, ok := data["attributes"].(map[string]any); ok {
+			if stats, ok := attrs["last_analysis_stats"].(map[string]any); ok {
+				if malicious, ok := stats["malicious"].(float64); ok {
+					record.Score = int(malicious)
+					record.Listed = malicious > 0
+				}
+			}
+		}
+	}
+	return record
+}
+
+func collectExternal(ctx context.Context, domain string, dnsObs audit.DNSObservation, opts Options) audit.ExternalObservation {
+	return audit.ExternalObservation{
+		MozillaObservatory: collectMozillaObservatory(ctx, domain, opts),
+		SSLLabs:            collectSSLLabs(ctx, domain, opts),
+		Shodan:             collectInternetDB(ctx, domain, dnsObs, opts),
+	}
+}
+
+func collectMozillaObservatory(ctx context.Context, domain string, opts Options) audit.ExternalGrade {
+	endpoint := "https://observatory-api.mdn.mozilla.net/api/v2/scan?host=" + url.QueryEscape(domain)
+	grade := audit.ExternalGrade{Checked: true, URL: endpoint}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		grade.Error = err.Error()
+		return grade
+	}
+	req.Header.Set("User-Agent", opts.UserAgent)
+	resp, err := (&http.Client{Timeout: opts.Timeout}).Do(req)
+	if err != nil {
+		grade.Error = err.Error()
+		return grade
+	}
+	defer resp.Body.Close()
+	grade.Status = fmt.Sprintf("http_%d", resp.StatusCode)
+	var raw map[string]any
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 500_000))
+	if json.Unmarshal(body, &raw) == nil {
+		grade.Grade = firstJSONText(raw, "grade", "scan_grade")
+		grade.Score = int(firstJSONFloat(raw, "score"))
+	}
+	return grade
+}
+
+func collectSSLLabs(ctx context.Context, domain string, opts Options) audit.ExternalGrade {
+	endpoint := "https://api.ssllabs.com/api/v3/analyze?publish=off&fromCache=on&all=done&host=" + url.QueryEscape(domain)
+	grade := audit.ExternalGrade{Checked: true, URL: endpoint}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		grade.Error = err.Error()
+		return grade
+	}
+	req.Header.Set("User-Agent", opts.UserAgent)
+	resp, err := (&http.Client{Timeout: opts.Timeout}).Do(req)
+	if err != nil {
+		grade.Error = err.Error()
+		return grade
+	}
+	defer resp.Body.Close()
+	grade.Status = fmt.Sprintf("http_%d", resp.StatusCode)
+	var raw map[string]any
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1_000_000))
+	if json.Unmarshal(body, &raw) == nil {
+		grade.Status = fmt.Sprint(raw["status"])
+		if endpoints, ok := raw["endpoints"].([]any); ok && len(endpoints) > 0 {
+			if first, ok := endpoints[0].(map[string]any); ok {
+				grade.Grade = fmt.Sprint(first["grade"])
+			}
+		}
+	}
+	return grade
+}
+
+func collectInternetDB(ctx context.Context, domain string, dnsObs audit.DNSObservation, opts Options) audit.ShodanResult {
+	result := audit.ShodanResult{Checked: true}
+	ips := append([]string{}, dnsObs.A...)
+	if len(ips) == 0 {
+		result.Error = "no A records to query"
+		return result
+	}
+	seenCVEs := map[string]bool{}
+	seenPorts := map[int]bool{}
+	seenHosts := map[string]bool{}
+	for _, ip := range ips {
+		endpoint := "https://internetdb.shodan.io/" + url.PathEscape(ip)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		if err != nil {
+			continue
+		}
+		req.Header.Set("User-Agent", opts.UserAgent)
+		resp, err := (&http.Client{Timeout: opts.Timeout}).Do(req)
+		if err != nil {
+			result.Error = err.Error()
+			continue
+		}
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 500_000))
+		_ = resp.Body.Close()
+		if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusNotFound {
+			continue
+		}
+		var raw map[string]any
+		if json.Unmarshal(body, &raw) != nil {
+			continue
+		}
+		for _, port := range anySlice(raw["ports"]) {
+			if p, ok := numericInt(port); ok {
+				seenPorts[p] = true
+			}
+		}
+		for _, cve := range anySlice(raw["vulns"]) {
+			seenCVEs[fmt.Sprint(cve)] = true
+		}
+		for _, host := range anySlice(raw["hostnames"]) {
+			seenHosts[fmt.Sprint(host)] = true
+		}
+	}
+	for p := range seenPorts {
+		result.Ports = append(result.Ports, p)
+	}
+	for cve := range seenCVEs {
+		result.CVEs = append(result.CVEs, cve)
+	}
+	for host := range seenHosts {
+		result.Hostnames = append(result.Hostnames, host)
+	}
+	sort.Ints(result.Ports)
+	sort.Strings(result.CVEs)
+	sort.Strings(result.Hostnames)
+	result.Open = len(result.Ports) > 0 || len(result.CVEs) > 0
+	return result
+}
+
+func anySlice(v any) []any {
+	if vals, ok := v.([]any); ok {
+		return vals
+	}
+	return nil
+}
+
+func numericInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int(n), true
+	case int:
+		return n, true
+	default:
+		return 0, false
+	}
+}
+
+func firstJSONText(raw map[string]any, keys ...string) string {
+	for _, key := range keys {
+		if val := fmt.Sprint(raw[key]); val != "" && val != "<nil>" {
+			return val
+		}
+	}
+	return ""
+}
+
+func firstJSONFloat(raw map[string]any, keys ...string) float64 {
+	for _, key := range keys {
+		if val, ok := raw[key].(float64); ok {
+			return val
+		}
+	}
+	return 0
+}
+
 func collectAggressive(ctx context.Context, domain string, ev audit.SharedEvidence, opts Options) audit.AggressiveObservation {
 	o := audit.AggressiveObservation{
 		SensitivePaths: map[string]int{},
@@ -430,6 +757,7 @@ func collectAggressive(ctx context.Context, domain string, ev audit.SharedEviden
 	o.Subdomains = enumerateSubdomains(domain, ev.CT.KnownNames, opts.Timeout)
 	o.FrameworkSignals = fingerprint(ev.HTTP)
 	o.ExposedTokenHints = tokenHints(ev.HTTP.Body)
+	o.CVEHints = cveHints(o.ServiceBanners, o.FrameworkSignals)
 	o.AXFR = probeAXFR(domain, ev.DNS.NS)
 	return o
 }
@@ -585,6 +913,32 @@ func tokenHints(body string) []string {
 				m = m[:80]
 			}
 			hints = append(hints, m)
+		}
+	}
+	return unique(hints)
+}
+
+func cveHints(banners map[string]string, frameworkSignals []string) []string {
+	haystack := strings.ToLower(strings.Join(frameworkSignals, "\n"))
+	for port, banner := range banners {
+		haystack += "\n" + port + ":" + strings.ToLower(banner)
+	}
+	hints := []string{}
+	signatures := map[string]string{
+		"apache/2.4.49": "Apache httpd 2.4.49 path traversal/RCE family (CVE-2021-41773)",
+		"apache/2.4.50": "Apache httpd 2.4.50 path traversal/RCE family (CVE-2021-42013)",
+		"apache/2.4.51": "Apache httpd 2.4.51 historically shown by scanners as outdated; verify patch level",
+		"openssh_7.":    "OpenSSH 7.x is old; verify vendor backports and CVEs",
+		"openssh 7.":    "OpenSSH 7.x is old; verify vendor backports and CVEs",
+		"php/5.":        "PHP 5.x is end-of-life",
+		"php/7.":        "PHP 7.x is end-of-life",
+		"wordpress":     "WordPress detected; verify core, plugin and theme CVEs",
+		"drupal":        "Drupal detected; verify core/module CVEs",
+		"joomla":        "Joomla detected; verify extension CVEs",
+	}
+	for needle, hint := range signatures {
+		if strings.Contains(haystack, needle) {
+			hints = append(hints, hint)
 		}
 	}
 	return unique(hints)

@@ -82,28 +82,35 @@ type SharedEvidence struct {
 	SecurityText TextFetch             `json:"security_txt"`
 	RDAP         RDAPObservation       `json:"rdap"`
 	CT           CTObservation         `json:"certificate_transparency"`
+	M365         M365Observation       `json:"microsoft_365,omitempty"`
+	Reputation   ReputationObservation `json:"reputation,omitempty"`
+	External     ExternalObservation   `json:"external,omitempty"`
 	Aggressive   AggressiveObservation `json:"aggressive,omitempty"`
 	Errors       map[string]string     `json:"errors,omitempty"`
 }
 
 type DNSObservation struct {
-	A          []string `json:"a,omitempty"`
-	AAAA       []string `json:"aaaa,omitempty"`
-	NS         []string `json:"ns,omitempty"`
-	MX         []string `json:"mx,omitempty"`
-	TXT        []string `json:"txt,omitempty"`
-	CAA        []string `json:"caa,omitempty"`
-	SOA        []string `json:"soa,omitempty"`
-	DMARCTXT   []string `json:"dmarc_txt,omitempty"`
-	MTASTSTXT  []string `json:"mta_sts_txt,omitempty"`
-	TLSRPTTXT  []string `json:"tls_rpt_txt,omitempty"`
-	BIMITXT    []string `json:"bimi_txt,omitempty"`
-	DNSKEY     []string `json:"dnskey,omitempty"`
-	DS         []string `json:"ds,omitempty"`
-	WildcardA  []string `json:"wildcard_a,omitempty"`
-	WWWAddress []string `json:"www_address,omitempty"`
-	MinTTL     uint32   `json:"min_ttl,omitempty"`
-	MaxTTL     uint32   `json:"max_ttl,omitempty"`
+	A            []string `json:"a,omitempty"`
+	AAAA         []string `json:"aaaa,omitempty"`
+	NS           []string `json:"ns,omitempty"`
+	MX           []string `json:"mx,omitempty"`
+	TXT          []string `json:"txt,omitempty"`
+	CAA          []string `json:"caa,omitempty"`
+	SOA          []string `json:"soa,omitempty"`
+	DMARCTXT     []string `json:"dmarc_txt,omitempty"`
+	MTASTSTXT    []string `json:"mta_sts_txt,omitempty"`
+	TLSRPTTXT    []string `json:"tls_rpt_txt,omitempty"`
+	BIMITXT      []string `json:"bimi_txt,omitempty"`
+	DKIMTXT      []string `json:"dkim_txt,omitempty"`
+	DKIMFound    []string `json:"dkim_found,omitempty"`
+	MSVerify     []string `json:"ms_verify,omitempty"`
+	Autodiscover []string `json:"autodiscover,omitempty"`
+	DNSKEY       []string `json:"dnskey,omitempty"`
+	DS           []string `json:"ds,omitempty"`
+	WildcardA    []string `json:"wildcard_a,omitempty"`
+	WWWAddress   []string `json:"www_address,omitempty"`
+	MinTTL       uint32   `json:"min_ttl,omitempty"`
+	MaxTTL       uint32   `json:"max_ttl,omitempty"`
 }
 
 type HTTPObservation struct {
@@ -166,6 +173,58 @@ type CTObservation struct {
 	Error      string   `json:"error,omitempty"`
 }
 
+type M365Observation struct {
+	Detected         bool     `json:"detected"`
+	MXSignals        []string `json:"mx_signals,omitempty"`
+	TXTSignals       []string `json:"txt_signals,omitempty"`
+	Autodiscover     []string `json:"autodiscover,omitempty"`
+	OpenIDIssuer     string   `json:"openid_issuer,omitempty"`
+	OpenIDStatusCode int      `json:"openid_status_code,omitempty"`
+	LegacyAuthProbe  string   `json:"legacy_auth_probe,omitempty"`
+	Error            string   `json:"error,omitempty"`
+}
+
+type ReputationObservation struct {
+	SpamhausDBL ReputationRecord `json:"spamhaus_dbl,omitempty"`
+	SURBL       ReputationRecord `json:"surbl,omitempty"`
+	URLHaus     ReputationRecord `json:"urlhaus,omitempty"`
+	VirusTotal  ReputationRecord `json:"virustotal,omitempty"`
+}
+
+type ReputationRecord struct {
+	Checked    bool     `json:"checked"`
+	Listed     bool     `json:"listed"`
+	Status     string   `json:"status,omitempty"`
+	Categories []string `json:"categories,omitempty"`
+	Score      int      `json:"score,omitempty"`
+	URL        string   `json:"url,omitempty"`
+	Error      string   `json:"error,omitempty"`
+}
+
+type ExternalObservation struct {
+	MozillaObservatory ExternalGrade `json:"mozilla_observatory,omitempty"`
+	SSLLabs            ExternalGrade `json:"ssl_labs,omitempty"`
+	Shodan             ShodanResult  `json:"shodan,omitempty"`
+}
+
+type ExternalGrade struct {
+	Checked bool   `json:"checked"`
+	Grade   string `json:"grade,omitempty"`
+	Score   int    `json:"score,omitempty"`
+	Status  string `json:"status,omitempty"`
+	URL     string `json:"url,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
+
+type ShodanResult struct {
+	Checked   bool     `json:"checked"`
+	Open      bool     `json:"open"`
+	Ports     []int    `json:"ports,omitempty"`
+	CVEs      []string `json:"cves,omitempty"`
+	Hostnames []string `json:"hostnames,omitempty"`
+	Error     string   `json:"error,omitempty"`
+}
+
 type AggressiveObservation struct {
 	CrawledURLs       []string          `json:"crawled_urls,omitempty"`
 	BrokenLinks       []string          `json:"broken_links,omitempty"`
@@ -176,6 +235,7 @@ type AggressiveObservation struct {
 	ServiceBanners    map[string]string `json:"service_banners,omitempty"`
 	FrameworkSignals  []string          `json:"framework_signals,omitempty"`
 	ExposedTokenHints []string          `json:"exposed_token_hints,omitempty"`
+	CVEHints          []string          `json:"cve_hints,omitempty"`
 	AXFR              map[string]string `json:"axfr,omitempty"`
 }
 
