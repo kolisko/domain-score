@@ -51,6 +51,8 @@ func DefaultImage(version string) string {
 	tag := strings.TrimSpace(version)
 	if tag == "" || tag == "dev" {
 		tag = "latest"
+	} else if tag[0] >= '0' && tag[0] <= '9' {
+		tag = "v" + tag
 	}
 	return "ghcr.io/kolisko/domain-score-tools:" + tag
 }

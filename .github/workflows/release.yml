@@ -20,14 +20,23 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute image tags
+        id: image-tags
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "tags<<EOF"
+            echo "ghcr.io/${GITHUB_REPOSITORY_OWNER}/domain-score-tools:${GITHUB_REF_NAME}"
+            echo "ghcr.io/${GITHUB_REPOSITORY_OWNER}/domain-score-tools:${version}"
+            echo "ghcr.io/${GITHUB_REPOSITORY_OWNER}/domain-score-tools:latest"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: tools/all-in-one/Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/domain-score-tools:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/domain-score-tools:latest
+          tags: ${{ steps.image-tags.outputs.tags }}
 
   goreleaser:
     runs-on: ubuntu-latest

@@ -13,6 +13,14 @@ func TestDefaultImageUsesVersionTag(t *testing.T) {
 	}
 }
 
+func TestDefaultImageAddsVPrefixForGoReleaserVersion(t *testing.T) {
+	got := DefaultImage("0.6.0")
+	want := "ghcr.io/kolisko/domain-score-tools:v0.6.0"
+	if got != want {
+		t.Fatalf("DefaultImage = %q, want %q", got, want)
+	}
+}
+
 func TestDefaultImageUsesLatestForDev(t *testing.T) {
 	got := DefaultImage("dev")
 	want := "ghcr.io/kolisko/domain-score-tools:latest"

@@ -39,10 +39,12 @@ func Pull(ctx context.Context, image string) error {
 	if image == "" {
 		return fmt.Errorf("tools image is empty")
 	}
+	statusf("pulling image %s", image)
 	cmd := exec.CommandContext(ctx, "docker", "pull", image)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("docker pull %s failed: %v: %s", image, err, strings.TrimSpace(string(out)))
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker pull %s failed: %v", image, err)
 	}
 	return nil
 }
@@ -84,46 +86,63 @@ func Run(ctx context.Context, target audit.Target, opts Options) (RunResult, err
 	}
 
 	start := time.Now()
+	statusf("selected tools: %s", strings.Join(selected, ","))
+	statusf("cache: %s", cacheDir)
+	statusf("checking Docker runtime")
 	if err := Doctor(ctx, "docker"); err != nil {
 		obs.Errors = append(obs.Errors, err.Error())
 		obs.Duration = time.Since(start).String()
+		statusf("Docker runtime check failed: %s", err)
 		return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
 	}
+	statusf("checking tools image: %s", image)
 	pulled, err := ensureImage(ctx, image, pullPolicy)
 	if err != nil {
 		obs.Errors = append(obs.Errors, err.Error())
 		obs.Duration = time.Since(start).String()
+		statusf("tools image check failed: %s", err)
 		return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
 	}
 	obs.ImagePulled = pulled
 
 	runCtx, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
+	statusf("running tools container with timeout %s", opts.Timeout)
 	if err := runContainer(runCtx, target, image, selected, cacheDir); err != nil {
 		obs.Errors = append(obs.Errors, err.Error())
+		statusf("tools container failed: %s", err)
 	}
 
+	statusf("reading raw outputs")
 	rawFiles, _ := listRawFiles(cacheDir)
 	obs.RawFiles = rawFiles
 	findings, parseErrors := ParseCache(cacheDir)
 	obs.Findings = findings
 	obs.Errors = append(obs.Errors, parseErrors...)
 	obs.Duration = time.Since(start).String()
+	if len(obs.Errors) > 0 {
+		statusf("completed with %d error(s) in %s", len(obs.Errors), obs.Duration)
+	} else {
+		statusf("completed in %s; findings=%d raw_files=%d", obs.Duration, len(obs.Findings), len(obs.RawFiles))
+	}
 
 	return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
 }
 
 func ensureImage(ctx context.Context, image string, pullPolicy string) (bool, error) {
 	if pullPolicy == PullAlways {
+		statusf("pull policy is always")
 		return true, Pull(ctx, image)
 	}
 	inspect := exec.CommandContext(ctx, "docker", "image", "inspect", image)
 	if err := inspect.Run(); err == nil {
+		statusf("image found locally")
 		return false, nil
 	}
 	if pullPolicy == PullNever {
 		return false, fmt.Errorf("tools image %s is not available locally and --tools-pull=never was used", image)
 	}
+	statusf("image not found locally; first pull can take several minutes")
 	return true, Pull(ctx, image)
 }
 
@@ -203,4 +222,8 @@ func listRawFiles(cacheDir string) ([]string, error) {
 		out = append(out, filepath.Join(rawDir, entry.Name()))
 	}
 	return out, nil
+}
+
+func statusf(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "domain-score tools: "+format+"\n", args...)
 }
