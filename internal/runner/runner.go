@@ -67,11 +67,12 @@ func Run(ctx context.Context, target audit.Target, opts Options) (audit.Report, 
 		ev.Tools = toolResult.Observation
 		results = append(results, toolResult.Results...)
 	}
+	aggressive := includesAggressive(selected) || toolResult.Observation.Enabled
 	return audit.Report{
 		Target:      target,
 		GeneratedAt: time.Now().UTC(),
 		Profile:     normalizedProfile(opts),
-		Aggressive:  includesAggressive(selected),
+		Aggressive:  aggressive,
 		Score:       score.Calculate(results),
 		Results:     results,
 		Evidence:    ev,

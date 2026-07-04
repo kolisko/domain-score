@@ -54,6 +54,22 @@ func TestResultsFromObservationMapsFindingsToChecks(t *testing.T) {
 	}
 }
 
+func TestResultsFromObservationRuntimeFailureDoesNotPassToolChecks(t *testing.T) {
+	results := resultsFromObservation(audit.ToolObservation{
+		Enabled:  true,
+		Runtime:  RuntimeDocker,
+		Image:    "ghcr.io/kolisko/domain-score-tools:v0.6.1",
+		Selected: []string{"nuclei", "greenbone"},
+		Errors:   []string{"docker pull failed"},
+	})
+	if len(results) != 1 {
+		t.Fatalf("results len = %d, want 1: %#v", len(results), results)
+	}
+	if results[0].CheckID != "tools.runtime" || results[0].Status != audit.StatusError {
+		t.Fatalf("unexpected runtime result: %#v", results[0])
+	}
+}
+
 func ParseCacheWithFixture(t *testing.T, cache string) (audit.ToolObservation, []string) {
 	t.Helper()
 	raw := filepath.Join(cache, "raw")

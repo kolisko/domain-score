@@ -14,6 +14,9 @@ func resultsFromObservation(obs audit.ToolObservation) []audit.Result {
 	for _, finding := range obs.Findings {
 		findingsByTool[finding.Tool] = append(findingsByTool[finding.Tool], finding)
 	}
+	if len(obs.Errors) > 0 && len(obs.RawFiles) == 0 && len(obs.Findings) == 0 {
+		return []audit.Result{runtimeResult(obs)}
+	}
 	results := []audit.Result{
 		inventoryResult("tools.subdomain_inventory", "Externí subdoménový inventář", "subfinder/amass subdomény", 3, []audit.ToolFinding{}, append(findingsByTool["subfinder"], findingsByTool["amass"]...)),
 		inventoryResult("tools.http_probe_inventory", "Externí HTTP probe inventář", "httpx aktivní webové služby", 3, []audit.ToolFinding{}, findingsByTool["httpx"]),
@@ -25,20 +28,29 @@ func resultsFromObservation(obs audit.ToolObservation) []audit.Result {
 		findingsResult("tools.greenbone_findings", "Greenbone vulnerability nálezy", 7, audit.SeverityCritical, findingsByTool["greenbone"], "Ověřte Greenbone nálezy, patchujte zranitelné služby a omezte zbytečnou expozici."),
 	}
 	if len(obs.Errors) > 0 {
-		results = append(results, audit.Result{
-			CheckID:        "tools.runtime",
-			Title:          "Docker runtime externích nástrojů",
-			Category:       "external_tools",
-			Mode:           audit.ModeAggressive,
-			Status:         audit.StatusError,
-			Severity:       audit.SeverityMedium,
-			Weight:         2,
-			ScoreImpact:    0,
-			Evidence:       map[string]any{"errors": obs.Errors, "image": obs.Image, "runtime": obs.Runtime},
-			Recommendation: "Zkontrolujte Docker, dostupnost image a spusťte `domain-score tools doctor`.",
-		})
+		results = append(results, runtimeResult(obs))
 	}
 	return results
+}
+
+func runtimeResult(obs audit.ToolObservation) audit.Result {
+	return audit.Result{
+		CheckID:     "tools.runtime",
+		Title:       "Docker runtime externích nástrojů",
+		Category:    "external_tools",
+		Mode:        audit.ModeAggressive,
+		Status:      audit.StatusError,
+		Severity:    audit.SeverityMedium,
+		Weight:      8,
+		ScoreImpact: 0,
+		Evidence: map[string]any{
+			"errors":   obs.Errors,
+			"image":    obs.Image,
+			"runtime":  obs.Runtime,
+			"selected": obs.Selected,
+		},
+		Recommendation: "Zkontrolujte Docker, dostupnost image a spusťte `domain-score tools doctor`.",
+	}
 }
 
 func inventoryResult(id string, title string, evidenceLabel string, weight int, expected []audit.ToolFinding, findings []audit.ToolFinding) audit.Result {
