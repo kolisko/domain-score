@@ -153,12 +153,14 @@ func runContainer(ctx context.Context, target audit.Target, image string, select
 	}
 	args := DockerRunArgs(image, cacheDir, target.Domain, url, selected)
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	out, err := cmd.CombinedOutput()
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	if ctx.Err() != nil {
 		return fmt.Errorf("tools container timed out: %w", ctx.Err())
 	}
 	if err != nil {
-		return fmt.Errorf("tools container failed: %v: %s", err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("tools container failed: %v", err)
 	}
 	return nil
 }

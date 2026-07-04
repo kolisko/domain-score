@@ -51,6 +51,35 @@ fi
 RAW="${OUT}/raw"
 mkdir -p "$RAW"
 
+log() {
+  printf 'domain-score tools container: %s\n' "$*" >&2
+}
+
+run_step() {
+  local name="$1"
+  local stdout_file="$2"
+  local stderr_file="$3"
+  shift 3
+  local started="$SECONDS"
+  log "start ${name}"
+  while true; do
+    sleep 30
+    log "still running ${name} ($((SECONDS - started))s)"
+  done &
+  local heartbeat_pid=$!
+  "$@" > "$stdout_file" 2> "$stderr_file"
+  local rc=$?
+  kill "$heartbeat_pid" 2>/dev/null || true
+  wait "$heartbeat_pid" 2>/dev/null || true
+  local elapsed=$((SECONDS - started))
+  if [[ "$rc" -eq 0 ]]; then
+    log "done ${name} (${elapsed}s)"
+  else
+    log "done ${name} with exit ${rc} (${elapsed}s; continuing, see raw/${name}.stderr)"
+  fi
+  return 0
+}
+
 has_tool() {
   local needle="$1"
   [[ ",${TOOLS}," == *",${needle},"* ]]
@@ -85,6 +114,7 @@ build_targets() {
   fi
   echo "$DOMAIN" >> "$targets"
   sort -u "$targets" -o "$targets"
+  log "targets prepared: $(wc -l < "$targets" | tr -d ' ')"
   echo "$targets"
 }
 
@@ -98,57 +128,72 @@ build_urls() {
     echo "$URL" >> "$urls"
   fi
   sort -u "$urls" -o "$urls"
+  log "urls prepared: $(wc -l < "$urls" | tr -d ' ')"
   echo "$urls"
 }
 
+log "scan started for ${DOMAIN}; tools=${TOOLS}; raw=${RAW}"
+
 if has_tool "subfinder"; then
-  subfinder -d "$DOMAIN" -json -silent -o "${RAW}/subfinder.jsonl" > "${RAW}/subfinder.stdout" 2> "${RAW}/subfinder.stderr" || true
+  run_step "subfinder" "${RAW}/subfinder.stdout" "${RAW}/subfinder.stderr" \
+    subfinder -d "$DOMAIN" -json -silent -o "${RAW}/subfinder.jsonl"
 fi
 
 if has_tool "amass"; then
-  amass enum -passive -d "$DOMAIN" -json "${RAW}/amass.jsonl" > "${RAW}/amass.stdout" 2> "${RAW}/amass.stderr" || true
+  run_step "amass" "${RAW}/amass.stdout" "${RAW}/amass.stderr" \
+    amass enum -passive -d "$DOMAIN" -json "${RAW}/amass.jsonl"
 fi
 
 TARGETS="$(build_targets)"
 
 if has_tool "httpx"; then
-  httpx -l "$TARGETS" -json -silent -status-code -title -tech-detect -location -tls-probe -follow-redirects -o "${RAW}/httpx.jsonl" > "${RAW}/httpx.stdout" 2> "${RAW}/httpx.stderr" || true
+  run_step "httpx" "${RAW}/httpx.stdout" "${RAW}/httpx.stderr" \
+    httpx -l "$TARGETS" -json -silent -status-code -title -tech-detect -location -tls-probe -follow-redirects -o "${RAW}/httpx.jsonl"
 fi
 
 URLS="$(build_urls)"
 
 if has_tool "naabu"; then
-  naabu -list "$TARGETS" -json -silent -top-ports 100 -o "${RAW}/naabu.jsonl" > "${RAW}/naabu.stdout" 2> "${RAW}/naabu.stderr" || true
+  run_step "naabu" "${RAW}/naabu.stdout" "${RAW}/naabu.stderr" \
+    naabu -list "$TARGETS" -json -silent -top-ports 100 -o "${RAW}/naabu.jsonl"
 fi
 
 if has_tool "nuclei"; then
-  nuclei -l "$URLS" -jsonl -silent -templates /opt/nuclei-templates -severity low,medium,high,critical -rate-limit 5 -o "${RAW}/nuclei.jsonl" > "${RAW}/nuclei.stdout" 2> "${RAW}/nuclei.stderr" || true
+  run_step "nuclei" "${RAW}/nuclei.stdout" "${RAW}/nuclei.stderr" \
+    nuclei -l "$URLS" -jsonl -silent -templates /opt/nuclei-templates -severity low,medium,high,critical -rate-limit 5 -o "${RAW}/nuclei.jsonl"
 fi
 
 if has_tool "testssl"; then
-  testssl.sh --fast --warnings off --jsonfile "${RAW}/testssl.json" "$DOMAIN" > "${RAW}/testssl.stdout" 2> "${RAW}/testssl.stderr" || true
+  run_step "testssl" "${RAW}/testssl.stdout" "${RAW}/testssl.stderr" \
+    testssl.sh --fast --warnings off --jsonfile "${RAW}/testssl.json" "$DOMAIN"
 fi
 
 if has_tool "zap"; then
-  zap-baseline.py -t "$URL" -J "${RAW}/zap.json" -I -m 1 > "${RAW}/zap.stdout" 2> "${RAW}/zap.stderr" || true
+  run_step "zap" "${RAW}/zap.stdout" "${RAW}/zap.stderr" \
+    zap-baseline.py -t "$URL" -J "${RAW}/zap.json" -I -m 1
 fi
 
 if has_tool "internetnl"; then
+  log "start internetnl"
   write_tool_finding \
     "${RAW}/internetnl.json" \
     "internetnl" \
     "info" \
     "Internet.nl local source is present in the tools image" \
     "Internet.nl is a multi-service compliance stack. The image includes the source tree for local operation; use the normalized domain-score checks and future service mode for full Internet.nl parity."
+  log "done internetnl"
 fi
 
 if has_tool "greenbone"; then
+  log "start greenbone"
   write_tool_finding \
     "${RAW}/greenbone.json" \
     "greenbone" \
     "info" \
     "Greenbone client components are present in the tools image" \
     "Greenbone Community Edition is a multi-service vulnerability management stack with feeds and database initialization. Use this image as the controlled runtime base; future releases can persist and initialize the full service state."
+  log "done greenbone"
 fi
 
+log "scan finished"
 exit 0
