@@ -12,6 +12,7 @@ import (
 	"github.com/kolisko/domain-score/internal/checks"
 	"github.com/kolisko/domain-score/internal/netx"
 	"github.com/kolisko/domain-score/internal/score"
+	exttools "github.com/kolisko/domain-score/internal/tools"
 )
 
 type Options struct {
@@ -23,6 +24,7 @@ type Options struct {
 	UserAgent   string
 	WeightsYAML []byte
 	Version     string
+	Tools       exttools.Options
 }
 
 func Run(ctx context.Context, target audit.Target, opts Options) (audit.Report, error) {
@@ -56,6 +58,14 @@ func Run(ctx context.Context, target audit.Target, opts Options) (audit.Report, 
 			res.Severity = meta.Severity
 		}
 		results = append(results, res)
+	}
+	toolResult, err := exttools.Run(ctx, target, opts.Tools)
+	if err != nil {
+		return audit.Report{}, err
+	}
+	if toolResult.Observation.Enabled {
+		ev.Tools = toolResult.Observation
+		results = append(results, toolResult.Results...)
 	}
 	return audit.Report{
 		Target:      target,

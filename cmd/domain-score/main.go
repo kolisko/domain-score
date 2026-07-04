@@ -17,6 +17,7 @@ import (
 	"github.com/kolisko/domain-score/internal/report"
 	"github.com/kolisko/domain-score/internal/runner"
 	"github.com/kolisko/domain-score/internal/selfupdate"
+	exttools "github.com/kolisko/domain-score/internal/tools"
 )
 
 var (
@@ -26,19 +27,25 @@ var (
 )
 
 type scanFlags struct {
-	format      string
-	out         string
-	profile     string
-	aggressive  bool
-	enable      []string
-	disable     []string
-	timeout     time.Duration
-	userAgent   string
-	weights     string
-	noColor     bool
-	sort        string
-	details     string
-	detailCheck string
+	format        string
+	out           string
+	profile       string
+	aggressive    bool
+	enable        []string
+	disable       []string
+	timeout       time.Duration
+	userAgent     string
+	weights       string
+	noColor       bool
+	sort          string
+	details       string
+	detailCheck   string
+	tools         string
+	toolRuntime   string
+	toolsImage    string
+	toolsPull     string
+	toolsTimeout  time.Duration
+	toolsCacheDir string
 }
 
 func main() {
@@ -59,7 +66,7 @@ such as example.com, or a URL such as https://example.com.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.AddCommand(scanCommand(), listChecksCommand(), explainCommand(), updateCommand(), versionCommand())
+	root.AddCommand(scanCommand(), toolsCommand(), listChecksCommand(), explainCommand(), updateCommand(), versionCommand())
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -109,7 +116,21 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 			if !report.IsDetailsMode(flags.details) {
 				return fmt.Errorf("unsupported details %q; use off, findings, or all", flags.details)
 			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), flags.timeout*time.Duration(4))
+			selectedTools, err := exttools.ExpandList(flags.tools)
+			if err != nil {
+				return err
+			}
+			if _, err := exttools.NormalizeRuntime(flags.toolRuntime); err != nil {
+				return err
+			}
+			if _, err := exttools.NormalizePullPolicy(flags.toolsPull); err != nil {
+				return err
+			}
+			scanTimeout := flags.timeout * time.Duration(4)
+			if len(selectedTools) > 0 && flags.toolsTimeout+flags.timeout > scanTimeout {
+				scanTimeout = flags.toolsTimeout + flags.timeout
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), scanTimeout)
 			defer cancel()
 			r, err := runner.Run(ctx, target, runner.Options{
 				Profile:     flags.profile,
@@ -120,6 +141,15 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 				UserAgent:   flags.userAgent,
 				WeightsYAML: weights,
 				Version:     version,
+				Tools: exttools.Options{
+					Tools:    flags.tools,
+					Runtime:  flags.toolRuntime,
+					Image:    flags.toolsImage,
+					Pull:     flags.toolsPull,
+					Timeout:  flags.toolsTimeout,
+					CacheDir: flags.toolsCacheDir,
+					Version:  version,
+				},
 			})
 			if err != nil {
 				return err
@@ -143,6 +173,12 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().StringVar(&flags.sort, "sort", "weight", "Sort console/markdown check rows: weight, status, category, id, none")
 	cmd.Flags().StringVar(&flags.details, "details", "off", "Add detailed explanations to console/markdown output: off, findings, all")
 	cmd.Flags().StringVar(&flags.detailCheck, "details-check", "", "Add detailed explanation for one specific check ID")
+	cmd.Flags().StringVar(&flags.tools, "tools", "none", "External Docker tools: none, all, projectdiscovery, or comma-separated tool names")
+	cmd.Flags().StringVar(&flags.toolRuntime, "tool-runtime", "docker", "External tools runtime: docker")
+	cmd.Flags().StringVar(&flags.toolsImage, "tools-image", exttools.DefaultImage(version), "Docker image for external tools")
+	cmd.Flags().StringVar(&flags.toolsPull, "tools-pull", "auto", "External tools image pull policy: auto, always, never")
+	cmd.Flags().DurationVar(&flags.toolsTimeout, "tools-timeout", exttools.DefaultTimeout, "External tools timeout")
+	cmd.Flags().StringVar(&flags.toolsCacheDir, "tools-cache-dir", "", "External tools cache directory")
 	return cmd
 }
 
@@ -198,6 +234,62 @@ func writeOutputs(r audit.Report, flags scanFlags) error {
 	}
 	fmt.Fprintf(os.Stderr, "domain-score: %s scored %d/100 (%s)\n", r.Target.Domain, r.Score.Overall, r.Score.Grade)
 	return nil
+}
+
+func toolsCommand() *cobra.Command {
+	var image string
+	cmd := &cobra.Command{
+		Use:   "tools",
+		Short: "Manage Docker-based external audit tools",
+	}
+	cmd.PersistentFlags().StringVar(&image, "tools-image", exttools.DefaultImage(version), "Docker image for external tools")
+	cmd.AddCommand(&cobra.Command{
+		Use:   "list",
+		Short: "List supported external tools and aliases",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Fprintln(cmd.OutOrStdout(), "tools:")
+			for _, tool := range exttools.KnownTools {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", tool)
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "\naliases:")
+			fmt.Fprintln(cmd.OutOrStdout(), "  all = subfinder,httpx,naabu,nuclei,amass,testssl,zap,internetnl,greenbone")
+			fmt.Fprintln(cmd.OutOrStdout(), "  projectdiscovery = subfinder,httpx,naabu,nuclei")
+			fmt.Fprintln(cmd.OutOrStdout(), "  web-passive = httpx,zap")
+			fmt.Fprintln(cmd.OutOrStdout(), "  tls = testssl")
+			fmt.Fprintln(cmd.OutOrStdout(), "  standards = internetnl")
+			fmt.Fprintln(cmd.OutOrStdout(), "  vuln = nuclei,greenbone")
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "doctor",
+		Short: "Check Docker availability for external tools",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
+			defer cancel()
+			if err := exttools.Doctor(ctx, "docker"); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Docker runtime OK\nTools image: %s\n", image)
+			return nil
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "pull",
+		Short: "Pull the Docker image for external tools",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Minute)
+			defer cancel()
+			if err := exttools.Doctor(ctx, "docker"); err != nil {
+				return err
+			}
+			if err := exttools.Pull(ctx, image); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Pulled %s\n", image)
+			return nil
+		},
+	})
+	return cmd
 }
 
 func listChecksCommand() *cobra.Command {

@@ -20,6 +20,9 @@ domain-score scan example.com --format json,md --out ./reports
 domain-score scan https://example.com --out - --format json
 domain-score scan example.com --details findings
 domain-score scan example.com --details-check dns.dmarc
+domain-score scan example.com --tools all
+domain-score tools doctor
+domain-score tools pull
 domain-score scan example.com --aggressive
 domain-score list-checks
 domain-score explain dns.dnssec_enabled
@@ -45,6 +48,9 @@ Useful flags:
 - `--sort weight|status|category|id|none`: sort console and Markdown check rows. Default is `weight`.
 - `--details off|findings|all`: add detailed explanations to console and Markdown reports. Default is `off`.
 - `--details-check check.id`: add a detailed explanation for one concrete check.
+- `--tools none|all|subfinder,httpx,naabu,nuclei,amass,testssl,zap,internetnl,greenbone`: run Docker-based external tools. Default is `none`.
+- `--tools-pull auto|always|never`: control external tools image pulls. Default is `auto`.
+- `--tools-timeout 30m`: timeout for external Docker tools.
 - `--out -`: print selected report formats to stdout.
 
 Public third-party checks that do not need user API keys run in the default
@@ -97,6 +103,40 @@ Aggressive checks are opt-in and remain non-exploitative:
 
 Domain Score does not perform brute force, denial of service, authenticated scanning, exploit delivery or state-changing actions.
 
+## Docker Tools
+
+External tools run in one Docker image so the host system does not need separate
+tool installations:
+
+```sh
+domain-score scan example.com --tools all
+domain-score scan example.com --tools projectdiscovery
+domain-score scan example.com --tools subfinder,httpx,nuclei
+domain-score tools doctor
+domain-score tools pull
+domain-score tools list
+```
+
+The default image is `ghcr.io/kolisko/domain-score-tools:<domain-score-version>`.
+If the image is missing and `--tools-pull auto` is used, Domain Score pulls it
+automatically. Docker Desktop or Docker Engine must already be installed and
+running; Domain Score does not install Docker itself.
+
+Supported tool aliases:
+
+- `all`: subfinder, httpx, naabu, nuclei, amass, testssl, zap, internetnl, greenbone.
+- `projectdiscovery`: subfinder, httpx, naabu, nuclei.
+- `web-passive`: httpx, zap.
+- `tls`: testssl.
+- `standards`: internetnl.
+- `vuln`: nuclei, greenbone.
+
+Raw tool outputs are cached under the user cache directory at
+`domain-score/tools/<domain>/latest/raw/`; each new scan replaces the previous
+`latest` cache for that domain. Active tools such as port scanning, Nuclei and
+Greenbone should only be used on domains and infrastructure you own or are
+authorized to test.
+
 ## Competitive Coverage
 
 Domain Score covers the public audit areas commonly advertised by hosted IT and
@@ -109,6 +149,7 @@ security audit tools:
 - Microsoft 365: public tenant discovery via MX/TXT/autodiscover/OpenID signals and a clear legacy-auth verification note.
 - Certificate Transparency subdomains and shadow-IT inventory signals.
 - SEO, performance, accessibility and AI-readiness checks that are usually outside pure security scanners.
+- Optional Docker-based external tooling: subfinder, httpx, naabu, nuclei, Amass, testssl.sh, ZAP Baseline, Internet.nl and Greenbone wrappers.
 
 ## Check API
 

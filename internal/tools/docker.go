@@ -1,0 +1,206 @@
+package tools
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/kolisko/domain-score/internal/audit"
+)
+
+type DockerRunner struct {
+	Docker string
+	Stdout *strings.Builder
+	Stderr *strings.Builder
+}
+
+type RunResult struct {
+	Observation audit.ToolObservation
+	Results     []audit.Result
+}
+
+func Doctor(ctx context.Context, docker string) error {
+	if strings.TrimSpace(docker) == "" {
+		docker = "docker"
+	}
+	cmd := exec.CommandContext(ctx, docker, "version", "--format", "{{.Server.Version}}")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("Docker runtime is required for --tools. Install Docker Desktop or Docker Engine and make sure it is running: %s", strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func Pull(ctx context.Context, image string) error {
+	if image == "" {
+		return fmt.Errorf("tools image is empty")
+	}
+	cmd := exec.CommandContext(ctx, "docker", "pull", image)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker pull %s failed: %v: %s", image, err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func Run(ctx context.Context, target audit.Target, opts Options) (RunResult, error) {
+	selected, err := ExpandList(opts.Tools)
+	if err != nil {
+		return RunResult{}, err
+	}
+	if len(selected) == 0 {
+		return RunResult{}, nil
+	}
+	runtime, err := NormalizeRuntime(opts.Runtime)
+	if err != nil {
+		return RunResult{}, err
+	}
+	pullPolicy, err := NormalizePullPolicy(opts.Pull)
+	if err != nil {
+		return RunResult{}, err
+	}
+	if opts.Timeout == 0 {
+		opts.Timeout = DefaultTimeout
+	}
+	image := opts.Image
+	if image == "" {
+		image = DefaultImage(opts.Version)
+	}
+	cacheDir, err := prepareCacheDir(opts.CacheDir, target.Domain)
+	if err != nil {
+		return RunResult{}, err
+	}
+	obs := audit.ToolObservation{
+		Enabled:    true,
+		Runtime:    runtime,
+		Image:      image,
+		CacheDir:   cacheDir,
+		Selected:   selected,
+		PullPolicy: pullPolicy,
+	}
+
+	start := time.Now()
+	if err := Doctor(ctx, "docker"); err != nil {
+		obs.Errors = append(obs.Errors, err.Error())
+		obs.Duration = time.Since(start).String()
+		return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
+	}
+	pulled, err := ensureImage(ctx, image, pullPolicy)
+	if err != nil {
+		obs.Errors = append(obs.Errors, err.Error())
+		obs.Duration = time.Since(start).String()
+		return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
+	}
+	obs.ImagePulled = pulled
+
+	runCtx, cancel := context.WithTimeout(ctx, opts.Timeout)
+	defer cancel()
+	if err := runContainer(runCtx, target, image, selected, cacheDir); err != nil {
+		obs.Errors = append(obs.Errors, err.Error())
+	}
+
+	rawFiles, _ := listRawFiles(cacheDir)
+	obs.RawFiles = rawFiles
+	findings, parseErrors := ParseCache(cacheDir)
+	obs.Findings = findings
+	obs.Errors = append(obs.Errors, parseErrors...)
+	obs.Duration = time.Since(start).String()
+
+	return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
+}
+
+func ensureImage(ctx context.Context, image string, pullPolicy string) (bool, error) {
+	if pullPolicy == PullAlways {
+		return true, Pull(ctx, image)
+	}
+	inspect := exec.CommandContext(ctx, "docker", "image", "inspect", image)
+	if err := inspect.Run(); err == nil {
+		return false, nil
+	}
+	if pullPolicy == PullNever {
+		return false, fmt.Errorf("tools image %s is not available locally and --tools-pull=never was used", image)
+	}
+	return true, Pull(ctx, image)
+}
+
+func runContainer(ctx context.Context, target audit.Target, image string, selected []string, cacheDir string) error {
+	url := "https://" + target.Domain
+	if len(target.URLs) > 0 {
+		url = target.URLs[0]
+	}
+	args := DockerRunArgs(image, cacheDir, target.Domain, url, selected)
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() != nil {
+		return fmt.Errorf("tools container timed out: %w", ctx.Err())
+	}
+	if err != nil {
+		return fmt.Errorf("tools container failed: %v: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func DockerRunArgs(image string, cacheDir string, domain string, url string, selected []string) []string {
+	return []string{
+		"run",
+		"--rm",
+		"--read-only",
+		"--tmpfs", "/tmp",
+		"--network", "bridge",
+		"-e", "HOME=/tmp",
+		"-v", cacheDir + ":/work:rw",
+		image,
+		"scan",
+		"--domain", domain,
+		"--url", url,
+		"--tools", strings.Join(selected, ","),
+		"--out", "/work",
+	}
+}
+
+func prepareCacheDir(base string, domain string) (string, error) {
+	if base == "" {
+		userCache, err := os.UserCacheDir()
+		if err != nil {
+			return "", err
+		}
+		base = filepath.Join(userCache, "domain-score", "tools")
+	}
+	cacheDir := filepath.Join(base, safePathPart(domain), "latest")
+	if err := os.RemoveAll(cacheDir); err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(filepath.Join(cacheDir, "raw"), 0o755); err != nil {
+		return "", err
+	}
+	return cacheDir, nil
+}
+
+func safePathPart(value string) string {
+	replacer := strings.NewReplacer("/", "_", "\\", "_", ":", "_", "..", "_")
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		return "unknown"
+	}
+	return replacer.Replace(value)
+}
+
+func listRawFiles(cacheDir string) ([]string, error) {
+	rawDir := filepath.Join(cacheDir, "raw")
+	entries, err := os.ReadDir(rawDir)
+	if err != nil {
+		return nil, err
+	}
+	out := []string{}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		out = append(out, filepath.Join(rawDir, entry.Name()))
+	}
+	return out, nil
+}

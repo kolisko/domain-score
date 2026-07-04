@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+set -u
+
+COMMAND="${1:-}"
+shift || true
+
+DOMAIN=""
+URL=""
+TOOLS=""
+OUT="/work"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --domain)
+      DOMAIN="${2:-}"
+      shift 2
+      ;;
+    --url)
+      URL="${2:-}"
+      shift 2
+      ;;
+    --tools)
+      TOOLS="${2:-}"
+      shift 2
+      ;;
+    --out)
+      OUT="${2:-}"
+      shift 2
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ "$COMMAND" != "scan" ]]; then
+  echo "usage: domain-score-tools scan --domain example.com --url https://example.com --tools subfinder,httpx --out /work" >&2
+  exit 2
+fi
+
+if [[ -z "$DOMAIN" ]]; then
+  echo "--domain is required" >&2
+  exit 2
+fi
+
+if [[ -z "$URL" ]]; then
+  URL="https://${DOMAIN}"
+fi
+
+RAW="${OUT}/raw"
+mkdir -p "$RAW"
+
+has_tool() {
+  local needle="$1"
+  [[ ",${TOOLS}," == *",${needle},"* ]]
+}
+
+write_tool_finding() {
+  local file="$1"
+  local tool="$2"
+  local severity="$3"
+  local title="$4"
+  local recommendation="$5"
+  jq -n \
+    --arg source "external_tool" \
+    --arg tool "$tool" \
+    --arg asset "$DOMAIN" \
+    --arg type "tool_status" \
+    --arg severity "$severity" \
+    --arg title "$title" \
+    --arg recommendation "$recommendation" \
+    '[{source:$source, tool:$tool, asset:$asset, type:$type, severity:$severity, title:$title, recommendation:$recommendation}]' \
+    > "$file"
+}
+
+build_targets() {
+  local targets="${OUT}/targets.txt"
+  : > "$targets"
+  if [[ -s "${RAW}/subfinder.jsonl" ]]; then
+    jq -r '.host? // empty' "${RAW}/subfinder.jsonl" >> "$targets" 2>/dev/null || true
+  fi
+  if [[ -s "${RAW}/amass.jsonl" ]]; then
+    jq -r '.name? // empty' "${RAW}/amass.jsonl" >> "$targets" 2>/dev/null || true
+  fi
+  echo "$DOMAIN" >> "$targets"
+  sort -u "$targets" -o "$targets"
+  echo "$targets"
+}
+
+build_urls() {
+  local urls="${OUT}/urls.txt"
+  : > "$urls"
+  if [[ -s "${RAW}/httpx.jsonl" ]]; then
+    jq -r '.url? // .input? // empty' "${RAW}/httpx.jsonl" >> "$urls" 2>/dev/null || true
+  fi
+  if [[ ! -s "$urls" ]]; then
+    echo "$URL" >> "$urls"
+  fi
+  sort -u "$urls" -o "$urls"
+  echo "$urls"
+}
+
+if has_tool "subfinder"; then
+  subfinder -d "$DOMAIN" -json -silent -o "${RAW}/subfinder.jsonl" > "${RAW}/subfinder.stdout" 2> "${RAW}/subfinder.stderr" || true
+fi
+
+if has_tool "amass"; then
+  amass enum -passive -d "$DOMAIN" -json "${RAW}/amass.jsonl" > "${RAW}/amass.stdout" 2> "${RAW}/amass.stderr" || true
+fi
+
+TARGETS="$(build_targets)"
+
+if has_tool "httpx"; then
+  httpx -l "$TARGETS" -json -silent -status-code -title -tech-detect -location -tls-probe -follow-redirects -o "${RAW}/httpx.jsonl" > "${RAW}/httpx.stdout" 2> "${RAW}/httpx.stderr" || true
+fi
+
+URLS="$(build_urls)"
+
+if has_tool "naabu"; then
+  naabu -list "$TARGETS" -json -silent -top-ports 100 -o "${RAW}/naabu.jsonl" > "${RAW}/naabu.stdout" 2> "${RAW}/naabu.stderr" || true
+fi
+
+if has_tool "nuclei"; then
+  nuclei -l "$URLS" -jsonl -silent -templates /opt/nuclei-templates -severity low,medium,high,critical -rate-limit 5 -o "${RAW}/nuclei.jsonl" > "${RAW}/nuclei.stdout" 2> "${RAW}/nuclei.stderr" || true
+fi
+
+if has_tool "testssl"; then
+  testssl.sh --fast --warnings off --jsonfile "${RAW}/testssl.json" "$DOMAIN" > "${RAW}/testssl.stdout" 2> "${RAW}/testssl.stderr" || true
+fi
+
+if has_tool "zap"; then
+  zap-baseline.py -t "$URL" -J "${RAW}/zap.json" -I -m 1 > "${RAW}/zap.stdout" 2> "${RAW}/zap.stderr" || true
+fi
+
+if has_tool "internetnl"; then
+  write_tool_finding \
+    "${RAW}/internetnl.json" \
+    "internetnl" \
+    "info" \
+    "Internet.nl local source is present in the tools image" \
+    "Internet.nl is a multi-service compliance stack. The image includes the source tree for local operation; use the normalized domain-score checks and future service mode for full Internet.nl parity."
+fi
+
+if has_tool "greenbone"; then
+  write_tool_finding \
+    "${RAW}/greenbone.json" \
+    "greenbone" \
+    "info" \
+    "Greenbone client components are present in the tools image" \
+    "Greenbone Community Edition is a multi-service vulnerability management stack with feeds and database initialization. Use this image as the controlled runtime base; future releases can persist and initialize the full service state."
+fi
+
+exit 0

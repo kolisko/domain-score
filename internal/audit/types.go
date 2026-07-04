@@ -86,6 +86,7 @@ type SharedEvidence struct {
 	Reputation   ReputationObservation `json:"reputation,omitempty"`
 	External     ExternalObservation   `json:"external,omitempty"`
 	Aggressive   AggressiveObservation `json:"aggressive,omitempty"`
+	Tools        ToolObservation       `json:"tools,omitempty"`
 	Errors       map[string]string     `json:"errors,omitempty"`
 }
 
@@ -237,6 +238,32 @@ type AggressiveObservation struct {
 	ExposedTokenHints []string          `json:"exposed_token_hints,omitempty"`
 	CVEHints          []string          `json:"cve_hints,omitempty"`
 	AXFR              map[string]string `json:"axfr,omitempty"`
+}
+
+type ToolObservation struct {
+	Enabled     bool          `json:"enabled"`
+	Runtime     string        `json:"runtime,omitempty"`
+	Image       string        `json:"image,omitempty"`
+	CacheDir    string        `json:"cache_dir,omitempty"`
+	Selected    []string      `json:"selected,omitempty"`
+	Findings    []ToolFinding `json:"findings,omitempty"`
+	Errors      []string      `json:"errors,omitempty"`
+	RawFiles    []string      `json:"raw_files,omitempty"`
+	Duration    string        `json:"duration,omitempty"`
+	PullPolicy  string        `json:"pull_policy,omitempty"`
+	ImagePulled bool          `json:"image_pulled,omitempty"`
+}
+
+type ToolFinding struct {
+	Source         string         `json:"source"`
+	Tool           string         `json:"tool"`
+	Asset          string         `json:"asset,omitempty"`
+	Type           string         `json:"type,omitempty"`
+	Severity       string         `json:"severity,omitempty"`
+	Title          string         `json:"title"`
+	Evidence       map[string]any `json:"evidence,omitempty"`
+	Recommendation string         `json:"recommendation,omitempty"`
+	RawFile        string         `json:"raw_file,omitempty"`
 }
 
 type Report struct {
