@@ -1,0 +1,7 @@
+.DS_Store
+/dist/
+/bin/
+/domain-score
+/coverage.out
+/reports/
+*.test
