@@ -26,17 +26,19 @@ var (
 )
 
 type scanFlags struct {
-	format     string
-	out        string
-	profile    string
-	aggressive bool
-	enable     []string
-	disable    []string
-	timeout    time.Duration
-	userAgent  string
-	weights    string
-	noColor    bool
-	sort       string
+	format      string
+	out         string
+	profile     string
+	aggressive  bool
+	enable      []string
+	disable     []string
+	timeout     time.Duration
+	userAgent   string
+	weights     string
+	noColor     bool
+	sort        string
+	details     string
+	detailCheck string
 }
 
 func main() {
@@ -81,6 +83,8 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 		Example: `  domain-score scan example.com
   domain-score scan https://example.com --format json,md --out ./reports
   domain-score scan example.com --out - --format json
+  domain-score scan example.com --details findings
+  domain-score scan example.com --details-check dns.dmarc
   domain-score scan example.com --aggressive
   domain-score scan example.com --enable aggressive.port_scan`,
 		Args: cobra.ExactArgs(1),
@@ -102,6 +106,9 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 			if !report.IsSortMode(flags.sort) {
 				return fmt.Errorf("unsupported sort %q; use weight, status, category, id, or none", flags.sort)
 			}
+			if !report.IsDetailsMode(flags.details) {
+				return fmt.Errorf("unsupported details %q; use off, findings, or all", flags.details)
+			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), flags.timeout*time.Duration(4))
 			defer cancel()
 			r, err := runner.Run(ctx, target, runner.Options{
@@ -117,6 +124,9 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 			if err != nil {
 				return err
 			}
+			if flags.detailCheck != "" && !reportHasCheck(r, flags.detailCheck) {
+				return fmt.Errorf("unknown details-check %q in this scan result", flags.detailCheck)
+			}
 			return writeOutputs(r, flags)
 		},
 	}
@@ -131,7 +141,18 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().StringVar(&flags.weights, "weights", "", "YAML file overriding check weights: weights: {check.id: 3}")
 	cmd.Flags().BoolVar(&flags.noColor, "no-color", false, "Disable ANSI colors in console output")
 	cmd.Flags().StringVar(&flags.sort, "sort", "weight", "Sort console/markdown check rows: weight, status, category, id, none")
+	cmd.Flags().StringVar(&flags.details, "details", "off", "Add detailed explanations to console/markdown output: off, findings, all")
+	cmd.Flags().StringVar(&flags.detailCheck, "details-check", "", "Add detailed explanation for one specific check ID")
 	return cmd
+}
+
+func reportHasCheck(r audit.Report, checkID string) bool {
+	for _, res := range r.Results {
+		if res.CheckID == checkID {
+			return true
+		}
+	}
+	return false
 }
 
 func writeOutputs(r audit.Report, flags scanFlags) error {
@@ -150,10 +171,10 @@ func writeOutputs(r audit.Report, flags scanFlags) error {
 			data, err = report.JSON(r)
 			name = "report.json"
 		case "md", "markdown":
-			data = report.MarkdownWithOptions(r, report.MarkdownOptions{Sort: flags.sort})
+			data = report.MarkdownWithOptions(r, report.MarkdownOptions{Sort: flags.sort, Details: flags.details, DetailsCheck: flags.detailCheck})
 			name = "report.md"
 		case "console", "text":
-			data = report.Console(r, report.ConsoleOptions{Color: !flags.noColor, Sort: flags.sort})
+			data = report.Console(r, report.ConsoleOptions{Color: !flags.noColor, Sort: flags.sort, Details: flags.details, DetailsCheck: flags.detailCheck})
 			name = "report.txt"
 		default:
 			return fmt.Errorf("unsupported format %q", f)

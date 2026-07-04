@@ -18,6 +18,8 @@ go install github.com/kolisko/domain-score/cmd/domain-score@latest
 domain-score scan example.com
 domain-score scan example.com --format json,md --out ./reports
 domain-score scan https://example.com --out - --format json
+domain-score scan example.com --details findings
+domain-score scan example.com --details-check dns.dmarc
 domain-score scan example.com --aggressive
 domain-score list-checks
 domain-score explain dns.dnssec_enabled
@@ -41,6 +43,8 @@ Useful flags:
 - `--weights weights.yml`: override scoring weights.
 - `--format console,json,md`: choose output formats. Default is `console`.
 - `--sort weight|status|category|id|none`: sort console and Markdown check rows. Default is `weight`.
+- `--details off|findings|all`: add detailed explanations to console and Markdown reports. Default is `off`.
+- `--details-check check.id`: add a detailed explanation for one concrete check.
 - `--out -`: print selected report formats to stdout.
 
 Public third-party checks that do not need user API keys run in the default
@@ -129,7 +133,16 @@ Result statuses:
 
 ## Output
 
-`console` is the default colorized stdout format. `report.json` is the stable automation format. `report.md` is optimized for humans and includes the overall grade, category scores, top findings, a status matrix table with one row per check, and detailed check sections.
+`console` is the default colorized stdout format. Add `--details findings` to
+explain only `fail`, `warn` and `error` checks, `--details all` to explain every
+check, or `--details-check dns.dmarc` to expand one specific check. Detailed
+sections include what is wrong, why it matters, evidence, how to fix it and the
+recommended target state.
+
+`report.json` is the stable automation format. `report.md` is optimized for
+humans and includes the overall grade, category scores, top findings, a status
+matrix table with one row per check, optional detailed explanations and detailed
+check sections.
 
 ## Development
 

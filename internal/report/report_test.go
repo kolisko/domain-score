@@ -39,6 +39,48 @@ func TestConsoleCanSortByStatus(t *testing.T) {
 	assertOrder(t, out, "FAIL    seo", "ERROR   transparency", "WARN    http_security", "PASS    dns", "N/A     reputation")
 }
 
+func TestConsoleCanRenderFindingDetails(t *testing.T) {
+	out := string(Console(sampleReport(), ConsoleOptions{Color: false, Details: DetailsFindings}))
+
+	for _, want := range []string{
+		"DETAILS",
+		"http.hsts: HSTS",
+		"What is wrong:",
+		"Why it matters:",
+		"Evidence:",
+		"header: \"\"",
+		"How to fix:",
+		"Recommended target state:",
+		"Strict-Transport-Security",
+		"seo.title: Title",
+		"transparency.rdap: RDAP",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("console details output missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "dns.a_record: A record") {
+		t.Fatalf("finding details unexpectedly included passing check:\n%s", out)
+	}
+}
+
+func TestConsoleCanRenderOneCheckDetail(t *testing.T) {
+	out := string(Console(sampleReport(), ConsoleOptions{Color: false, DetailsCheck: "dns.a_record"}))
+
+	for _, want := range []string{
+		"DETAILS",
+		"dns.a_record: A record",
+		"Kontrola prošla",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("single check details output missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "http.hsts: HSTS") {
+		t.Fatalf("single check details unexpectedly included another check:\n%s", out)
+	}
+}
+
 func TestConsoleColorizesStatusCells(t *testing.T) {
 	out := string(Console(sampleReport(), ConsoleOptions{Color: true}))
 
@@ -75,6 +117,24 @@ func TestMarkdownIncludesStatusMatrix(t *testing.T) {
 	assertOrder(t, out, "`dns.a_record`", "`http.hsts`", "`seo.title`", "`reputation.virustotal`", "`transparency.rdap`")
 }
 
+func TestMarkdownIncludesDetailedFindings(t *testing.T) {
+	out := string(MarkdownWithOptions(sampleReport(), MarkdownOptions{Details: DetailsFindings}))
+
+	for _, want := range []string{
+		"## Detailed checks",
+		"### HSTS `http.hsts`",
+		"**What is wrong:**",
+		"**Why it matters:**",
+		"- `header: \"\"`",
+		"**How to fix:** Add HSTS.",
+		"**Recommended target state:** `Strict-Transport-Security: max-age=31536000; includeSubDomains`",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("markdown details output missing %q:\n%s", want, out)
+		}
+	}
+}
+
 func sampleReport() audit.Report {
 	return audit.Report{
 		Target:     audit.Target{Domain: "example.com"},
@@ -103,6 +163,7 @@ func sampleReport() audit.Report {
 				Mode:           audit.ModeSafe,
 				Status:         audit.StatusWarn,
 				Weight:         5,
+				Evidence:       map[string]any{"header": ""},
 				Recommendation: "Add HSTS.",
 			},
 			{

@@ -9,8 +9,10 @@ import (
 )
 
 type ConsoleOptions struct {
-	Color bool
-	Sort  string
+	Color        bool
+	Sort         string
+	Details      string
+	DetailsCheck string
 }
 
 func Console(r audit.Report, opts ConsoleOptions) []byte {
@@ -36,7 +38,29 @@ func Console(r audit.Report, opts ConsoleOptions) []byte {
 			}
 		}
 	}
+	writeConsoleDetails(&b, r, opts)
 	return b.Bytes()
+}
+
+func writeConsoleDetails(b *bytes.Buffer, r audit.Report, opts ConsoleOptions) {
+	results := detailResults(r.Results, opts.Sort, opts.Details, opts.DetailsCheck)
+	if len(results) == 0 {
+		return
+	}
+	fmt.Fprintln(b, "\nDETAILS")
+	fmt.Fprintln(b, "-------")
+	for _, res := range results {
+		fmt.Fprintf(b, "\n%s: %s\n", res.CheckID, res.Title)
+		fmt.Fprintf(b, "Status: %s  Category: %s  Weight: %d  Severity: %s  Mode: %s\n", strings.ToUpper(string(res.Status)), res.Category, res.Weight, res.Severity, res.Mode)
+		fmt.Fprintf(b, "What is wrong:\n  %s\n", problemText(res))
+		fmt.Fprintf(b, "Why it matters:\n  %s\n", riskText(res))
+		fmt.Fprintln(b, "Evidence:")
+		for _, line := range evidenceLines(res) {
+			fmt.Fprintf(b, "  - %s\n", line)
+		}
+		fmt.Fprintf(b, "How to fix:\n  %s\n", fixText(res))
+		fmt.Fprintf(b, "Recommended target state:\n  %s\n", targetStateText(res, r.Target.Domain))
+	}
 }
 
 func consoleStatusCell(status audit.Status, color bool, width int) string {

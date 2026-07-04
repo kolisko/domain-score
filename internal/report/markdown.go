@@ -10,7 +10,9 @@ import (
 )
 
 type MarkdownOptions struct {
-	Sort string
+	Sort         string
+	Details      string
+	DetailsCheck string
 }
 
 func Markdown(r audit.Report) []byte {
@@ -75,6 +77,8 @@ func MarkdownWithOptions(r audit.Report, opts MarkdownOptions) []byte {
 		fmt.Fprintln(&b, "- No warning or failing findings.")
 	}
 
+	writeMarkdownDetails(&b, r, opts)
+
 	fmt.Fprintln(&b, "\n## All checks")
 	for _, res := range sortedResults(r.Results, opts.Sort) {
 		fmt.Fprintf(&b, "### %s `%s`\n\n", res.Title, res.CheckID)
@@ -91,6 +95,30 @@ func MarkdownWithOptions(r audit.Report, opts MarkdownOptions) []byte {
 		fmt.Fprintln(&b)
 	}
 	return b.Bytes()
+}
+
+func writeMarkdownDetails(b *bytes.Buffer, r audit.Report, opts MarkdownOptions) {
+	results := detailResults(r.Results, opts.Sort, opts.Details, opts.DetailsCheck)
+	if len(results) == 0 {
+		return
+	}
+	fmt.Fprintln(b, "\n## Detailed checks")
+	for _, res := range results {
+		fmt.Fprintf(b, "\n### %s `%s`\n\n", res.Title, res.CheckID)
+		fmt.Fprintf(b, "- Status: `%s`\n", res.Status)
+		fmt.Fprintf(b, "- Category: `%s`\n", res.Category)
+		fmt.Fprintf(b, "- Weight: `%d`\n", res.Weight)
+		fmt.Fprintf(b, "- Severity: `%s`\n", res.Severity)
+		fmt.Fprintf(b, "- Mode: `%s`\n\n", res.Mode)
+		fmt.Fprintf(b, "**What is wrong:** %s\n\n", escapeMarkdownText(problemText(res)))
+		fmt.Fprintf(b, "**Why it matters:** %s\n\n", escapeMarkdownText(riskText(res)))
+		fmt.Fprintln(b, "**Evidence:**")
+		for _, line := range evidenceLines(res) {
+			fmt.Fprintf(b, "- `%s`\n", escapeBackticks(line))
+		}
+		fmt.Fprintf(b, "\n**How to fix:** %s\n\n", escapeMarkdownText(fixText(res)))
+		fmt.Fprintf(b, "**Recommended target state:** %s\n", escapeMarkdownText(targetStateText(res, r.Target.Domain)))
+	}
 }
 
 func markdownStatusMarks(status audit.Status) (string, string, string, string, string) {
@@ -125,4 +153,12 @@ func escapeTable(value string) string {
 	value = strings.ReplaceAll(value, "|", "\\|")
 	value = strings.ReplaceAll(value, "\n", " ")
 	return value
+}
+
+func escapeMarkdownText(value string) string {
+	return strings.ReplaceAll(value, "\n", " ")
+}
+
+func escapeBackticks(value string) string {
+	return strings.ReplaceAll(value, "`", "\\`")
 }
