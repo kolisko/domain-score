@@ -16,7 +16,7 @@ const (
 	PullAlways = "always"
 	PullNever  = "never"
 
-	DefaultTimeout = 30 * time.Minute
+	DefaultTimeout = 60 * time.Minute
 )
 
 var KnownTools = []string{

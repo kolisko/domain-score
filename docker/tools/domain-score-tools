@@ -61,6 +61,7 @@ run_step() {
   local stderr_file="$3"
   shift 3
   local started="$SECONDS"
+  printf '{"tool":"%s","status":"started"}\n' "$name" > "${RAW}/${name}.started"
   log "start ${name}"
   while true; do
     sleep 30
@@ -77,6 +78,13 @@ run_step() {
   else
     log "done ${name} with exit ${rc} (${elapsed}s; continuing, see raw/${name}.stderr)"
   fi
+  jq -n \
+    --arg tool "$name" \
+    --arg status "done" \
+    --argjson exit_code "$rc" \
+    --argjson elapsed_seconds "$elapsed" \
+    '{tool:$tool,status:$status,exit_code:$exit_code,elapsed_seconds:$elapsed_seconds}' \
+    > "${RAW}/${name}.status" 2>/dev/null || true
   return 0
 }
 
@@ -178,6 +186,7 @@ if has_tool "zap"; then
 fi
 
 if has_tool "internetnl"; then
+  printf '{"tool":"internetnl","status":"started"}\n' > "${RAW}/internetnl.started"
   log "start internetnl"
   write_tool_finding \
     "${RAW}/internetnl.json" \
@@ -186,9 +195,11 @@ if has_tool "internetnl"; then
     "Internet.nl local source is present in the tools image" \
     "Internet.nl is a multi-service compliance stack. The image includes the source tree for local operation; use the normalized domain-score checks and future service mode for full Internet.nl parity."
   log "done internetnl"
+  printf '{"tool":"internetnl","status":"done","exit_code":0}\n' > "${RAW}/internetnl.status"
 fi
 
 if has_tool "greenbone"; then
+  printf '{"tool":"greenbone","status":"started"}\n' > "${RAW}/greenbone.started"
   log "start greenbone"
   write_tool_finding \
     "${RAW}/greenbone.json" \
@@ -197,6 +208,7 @@ if has_tool "greenbone"; then
     "Greenbone client components are present in the tools image" \
     "Greenbone Community Edition is a multi-service vulnerability management stack with feeds and database initialization. Use this image as the controlled runtime base; future releases can persist and initialize the full service state."
   log "done greenbone"
+  printf '{"tool":"greenbone","status":"done","exit_code":0}\n' > "${RAW}/greenbone.status"
 fi
 
 log "scan finished"

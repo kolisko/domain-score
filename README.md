@@ -50,7 +50,7 @@ Useful flags:
 - `--details-check check.id`: add a detailed explanation for one concrete check.
 - `--tools none|all|subfinder,httpx,naabu,nuclei,amass,testssl,zap,internetnl,greenbone`: run Docker-based external tools. Default is `none`.
 - `--tools-pull auto|always|never`: control external tools image pulls. Default is `auto`.
-- `--tools-timeout 30m`: timeout for external Docker tools.
+- `--tools-timeout 60m`: timeout for external Docker tools.
 - `--out -`: print selected report formats to stdout.
 
 Public third-party checks that do not need user API keys run in the default

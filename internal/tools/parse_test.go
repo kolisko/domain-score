@@ -71,6 +71,30 @@ func TestResultsFromObservationRuntimeFailureDoesNotPassToolChecks(t *testing.T)
 	}
 }
 
+func TestResultsFromObservationDoesNotPassIncompleteSelectedTool(t *testing.T) {
+	results := resultsFromObservation(audit.ToolObservation{
+		Enabled:  true,
+		Runtime:  RuntimeDocker,
+		Image:    "ghcr.io/kolisko/domain-score-tools:vtest",
+		Selected: []string{"zap"},
+		RawFiles: []string{"/cache/raw/nuclei.status"},
+		Errors:   []string{"tools container timed out"},
+	})
+	var got audit.Result
+	for _, result := range results {
+		if result.CheckID == "tools.zap_baseline_alerts" {
+			got = result
+			break
+		}
+	}
+	if got.CheckID == "" {
+		t.Fatalf("missing zap result: %#v", results)
+	}
+	if got.Status != audit.StatusError {
+		t.Fatalf("zap status = %s, want error", got.Status)
+	}
+}
+
 func ParseCacheWithFixture(t *testing.T, cache string) (audit.ToolObservation, []string) {
 	t.Helper()
 	raw := filepath.Join(cache, "raw")

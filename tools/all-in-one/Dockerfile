@@ -36,12 +36,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=go-tools /go/bin/subfinder /usr/local/bin/subfinder
-COPY --from=go-tools /go/bin/httpx /usr/local/bin/httpx
-COPY --from=go-tools /go/bin/naabu /usr/local/bin/naabu
-COPY --from=go-tools /go/bin/nuclei /usr/local/bin/nuclei
-COPY --from=go-tools /go/bin/amass /usr/local/bin/amass
-
 RUN git init /opt/testssl.sh \
     && git -C /opt/testssl.sh remote add origin https://github.com/testssl/testssl.sh \
     && git -C /opt/testssl.sh fetch --depth=1 origin "${TESTSSL_REF}" \
@@ -61,6 +55,12 @@ RUN git init /opt/internetnl \
 RUN python3 -m pip install --break-system-packages --no-cache-dir \
     gvm-tools==${GVM_TOOLS_VERSION} \
     greenbone-feed-sync==${GREENBONE_FEED_SYNC_VERSION} || true
+
+COPY --from=go-tools /go/bin/subfinder /usr/local/bin/subfinder
+COPY --from=go-tools /go/bin/httpx /usr/local/bin/httpx
+COPY --from=go-tools /go/bin/naabu /usr/local/bin/naabu
+COPY --from=go-tools /go/bin/nuclei /usr/local/bin/nuclei
+COPY --from=go-tools /go/bin/amass /usr/local/bin/amass
 
 COPY docker/tools/domain-score-tools /usr/local/bin/domain-score-tools
 RUN chmod +x /usr/local/bin/domain-score-tools
