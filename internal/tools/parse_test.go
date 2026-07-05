@@ -136,6 +136,37 @@ func TestResultsFromObservationMarksFailedToolStatusAsError(t *testing.T) {
 	}
 }
 
+func TestResultsFromObservationDoesNotWarnForToolStatusOnlyPlaceholder(t *testing.T) {
+	results := resultsFromObservation(audit.ToolObservation{
+		Enabled:  true,
+		Runtime:  RuntimeDocker,
+		Image:    "ghcr.io/kolisko/domain-score-tools:vtest",
+		Selected: []string{"internetnl"},
+		Statuses: []audit.ToolStatus{{Tool: "internetnl", Status: "done", ExitCode: 0}},
+		RawFiles: []string{"/cache/raw/internetnl.status", "/cache/raw/internetnl.json"},
+		Findings: []audit.ToolFinding{{
+			Tool:           "internetnl",
+			Type:           "tool_status",
+			Severity:       "info",
+			Title:          "Internet.nl local source is present in the tools image",
+			Recommendation: "Full Internet.nl service mode is not enabled yet.",
+		}},
+	})
+	var got audit.Result
+	for _, result := range results {
+		if result.CheckID == "tools.internetnl_score" {
+			got = result
+			break
+		}
+	}
+	if got.CheckID == "" {
+		t.Fatalf("missing internetnl result: %#v", results)
+	}
+	if got.Status != audit.StatusNotApplicable || got.ScoreImpact != 0 {
+		t.Fatalf("internetnl status=%s impact=%d, want not_applicable/0", got.Status, got.ScoreImpact)
+	}
+}
+
 func ParseCacheWithFixture(t *testing.T, cache string) (audit.ToolObservation, []string) {
 	t.Helper()
 	raw := filepath.Join(cache, "raw")

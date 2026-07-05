@@ -110,6 +110,9 @@ func findingsResult(id string, title string, weight int, severity audit.Severity
 	if !completed {
 		return toolIncompleteResult(id, title, weight, map[string]any{"findings": findings, "count": len(findings), "summary": findingSummary(findings)})
 	}
+	if onlyToolStatusFindings(findings) {
+		return toolStatusOnlyResult(id, title, weight, findings, recommendation)
+	}
 	status := audit.StatusPass
 	if len(findings) > 0 {
 		status = highestStatus(findings)
@@ -133,6 +136,39 @@ func findingToolResult(statuses map[string]audit.ToolStatus, id string, title st
 		return toolFailedResult(id, title, weight, status, map[string]any{"findings": findings, "count": len(findings), "summary": findingSummary(findings)})
 	}
 	return findingsResult(id, title, weight, severity, findings, recommendation, completed)
+}
+
+func toolStatusOnlyResult(id string, title string, weight int, findings []audit.ToolFinding, recommendation string) audit.Result {
+	for _, finding := range findings {
+		if strings.TrimSpace(finding.Recommendation) != "" {
+			recommendation = finding.Recommendation
+			break
+		}
+	}
+	return audit.Result{
+		CheckID:        id,
+		Title:          title,
+		Category:       "external_tools",
+		Mode:           audit.ModeAggressive,
+		Status:         audit.StatusNotApplicable,
+		Severity:       audit.SeverityInfo,
+		Weight:         weight,
+		ScoreImpact:    0,
+		Evidence:       map[string]any{"findings": findings, "count": len(findings), "summary": findingSummary(findings)},
+		Recommendation: recommendation,
+	}
+}
+
+func onlyToolStatusFindings(findings []audit.ToolFinding) bool {
+	if len(findings) == 0 {
+		return false
+	}
+	for _, finding := range findings {
+		if !strings.EqualFold(strings.TrimSpace(finding.Type), "tool_status") {
+			return false
+		}
+	}
+	return true
 }
 
 func toolIncompleteResult(id string, title string, weight int, evidence map[string]any) audit.Result {
