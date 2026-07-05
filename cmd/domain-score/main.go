@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -15,10 +16,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kolisko/domain-score/internal/audit"
+	"github.com/kolisko/domain-score/internal/catalog"
 	"github.com/kolisko/domain-score/internal/checks"
 	"github.com/kolisko/domain-score/internal/report"
 	"github.com/kolisko/domain-score/internal/runner"
 	"github.com/kolisko/domain-score/internal/selfupdate"
+	"github.com/kolisko/domain-score/internal/store"
 	exttools "github.com/kolisko/domain-score/internal/tools"
 )
 
@@ -42,6 +45,7 @@ type scanFlags struct {
 	sort          string
 	details       string
 	detailCheck   string
+	check         string
 	tools         string
 	toolRuntime   string
 	toolsImage    string
@@ -71,7 +75,7 @@ such as example.com, or a URL such as https://example.com.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.AddCommand(scanCommand(), toolsCommand(), listChecksCommand(), explainCommand(), updateCommand(), versionCommand())
+	root.AddCommand(scanCommand(), toolsCommand(), historyCommand(), listCommand(), listChecksCommand(), explainCommand(), updateCommand(), versionCommand())
 	if err := root.ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -97,6 +101,8 @@ Default scans are safe/non-invasive. Aggressive checks run only with
   domain-score scan example.com --out - --format json
   domain-score scan example.com --details findings
   domain-score scan example.com --details-check dns.dmarc
+  domain-score scan example.com --check dns.dmarc
+  domain-score scan example.com --check network.open_ports
   domain-score scan example.com --aggressive
   domain-score scan example.com --enable aggressive.port_scan`,
 		Args: cobra.ExactArgs(1),
@@ -131,6 +137,20 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 			if _, err := exttools.NormalizePullPolicy(flags.toolsPull); err != nil {
 				return err
 			}
+			runCheckID, reportCheckID, toolsOverride, err := resolveSingleCheck(flags.check, flags.tools)
+			if err != nil {
+				return err
+			}
+			if flags.check != "" && (len(flags.enable) > 0 || len(flags.disable) > 0) {
+				return fmt.Errorf("--check cannot be combined with --enable or --disable")
+			}
+			if toolsOverride != "" {
+				flags.tools = toolsOverride
+				selectedTools, err = exttools.ExpandList(flags.tools)
+				if err != nil {
+					return err
+				}
+			}
 			scanTimeout := flags.timeout * time.Duration(4)
 			if len(selectedTools) > 0 && flags.toolsTimeout+flags.timeout > scanTimeout {
 				scanTimeout = flags.toolsTimeout + flags.timeout
@@ -155,6 +175,8 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 					CacheDir: flags.toolsCacheDir,
 					Version:  version,
 				},
+				CheckID:       runCheckID,
+				ReportCheckID: reportCheckID,
 			})
 			if err != nil {
 				return err
@@ -178,6 +200,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().StringVar(&flags.sort, "sort", "weight", "Sort console/markdown check rows: weight, status, category, id, none")
 	cmd.Flags().StringVar(&flags.details, "details", "off", "Add detailed explanations to console/markdown output: off, findings, all")
 	cmd.Flags().StringVar(&flags.detailCheck, "details-check", "", "Add detailed explanation for one specific check ID")
+	cmd.Flags().StringVar(&flags.check, "check", "", "Run one internal or catalog atomic check ID")
 	cmd.Flags().StringVar(&flags.tools, "tools", "none", "External Docker tools: none, all, projectdiscovery, or comma-separated tool names")
 	cmd.Flags().StringVar(&flags.toolRuntime, "tool-runtime", "docker", "External tools runtime: docker")
 	cmd.Flags().StringVar(&flags.toolsImage, "tools-image", exttools.DefaultImage(version), "Docker image for external tools")
@@ -185,6 +208,50 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().DurationVar(&flags.toolsTimeout, "tools-timeout", exttools.DefaultTimeout, "External tools timeout")
 	cmd.Flags().StringVar(&flags.toolsCacheDir, "tools-cache-dir", "", "External tools cache directory")
 	return cmd
+}
+
+func resolveSingleCheck(checkID string, currentTools string) (string, string, string, error) {
+	checkID = strings.TrimSpace(checkID)
+	if checkID == "" {
+		return "", "", "", nil
+	}
+	for _, check := range checks.Registry() {
+		if check.Meta().ID == checkID {
+			return checkID, checkID, "", nil
+		}
+	}
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		return "", "", "", err
+	}
+	check, ok := cat.FindCheck(checkID)
+	if !ok {
+		return "", "", "", fmt.Errorf("unknown check %q", checkID)
+	}
+	if ids := check.InternalCheckIDs(); len(ids) > 0 {
+		return ids[0], checkID, "", nil
+	}
+	tools := dockerToolsForCatalogCheck(check)
+	if len(tools) == 0 {
+		return "", "", "", fmt.Errorf("check %q is cataloged but is not runnable yet", checkID)
+	}
+	if selected, _ := exttools.ExpandList(currentTools); len(selected) > 0 {
+		return "", checkID, "", nil
+	}
+	return "", checkID, strings.Join(tools, ","), nil
+}
+
+func dockerToolsForCatalogCheck(check catalog.Check) []string {
+	out := []string{}
+	seen := map[string]bool{}
+	for _, tool := range check.ToolNames() {
+		tool = strings.TrimSpace(tool)
+		if exttools.IsKnownTool(tool) && !seen[tool] {
+			seen[tool] = true
+			out = append(out, tool)
+		}
+	}
+	return out
 }
 
 func reportHasCheck(r audit.Report, checkID string) bool {
@@ -237,8 +304,160 @@ func writeOutputs(r audit.Report, flags scanFlags) error {
 			return err
 		}
 	}
+	if err := writeRunArtifacts(r, flags); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: could not write run artifacts: %v\n", err)
+	}
 	fmt.Fprintf(os.Stderr, "domain-score: %s scored %d/100 (%s)\n", r.Target.Domain, r.Score.Overall, r.Score.Grade)
 	return nil
+}
+
+func writeRunArtifacts(r audit.Report, flags scanFlags) error {
+	runDir := r.Evidence.Tools.CacheDir
+	if runDir == "" {
+		return nil
+	}
+	if err := os.MkdirAll(runDir, 0o755); err != nil {
+		return err
+	}
+	jsonData, err := report.JSON(r)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "report.json"), jsonData, 0o644); err != nil {
+		return err
+	}
+	md := report.MarkdownWithOptions(r, report.MarkdownOptions{Sort: flags.sort, Details: flags.details, DetailsCheck: flags.detailCheck})
+	if err := os.WriteFile(filepath.Join(runDir, "report.md"), md, 0o644); err != nil {
+		return err
+	}
+	console := report.Console(r, report.ConsoleOptions{Color: false, Sort: flags.sort, Details: flags.details, DetailsCheck: flags.detailCheck})
+	if err := os.WriteFile(filepath.Join(runDir, "report.txt"), console, 0o644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func historyCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "history",
+		Short: "Show stored scan runs under ~/.domain-score",
+	}
+	cmd.AddCommand(&cobra.Command{
+		Use:   "list [domain]",
+		Short: "List stored scan runs",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			domain := ""
+			if len(args) > 0 {
+				domain = args[0]
+			}
+			runs, err := store.ListRuns(domain)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%-18s  %-28s  %-20s  %-7s  %-6s  %s\n", "RUN", "DOMAIN", "GENERATED", "SCORE", "GRADE", "TOOLS")
+			fmt.Fprintf(cmd.OutOrStdout(), "%-18s  %-28s  %-20s  %-7s  %-6s  %s\n", "---", "------", "---------", "-----", "-----", "-----")
+			for _, run := range runs {
+				generated := ""
+				if !run.GeneratedAt.IsZero() {
+					generated = run.GeneratedAt.Format(time.RFC3339)
+				}
+				score := ""
+				if run.Grade != "" {
+					score = fmt.Sprintf("%d", run.Score)
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%-18s  %-28s  %-20s  %-7s  %-6s  %s\n", run.ID, run.Domain, generated, score, run.Grade, strings.Join(run.Tools, ","))
+			}
+			return nil
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "show <domain> [run|latest]",
+		Short: "Show one stored scan summary and artifact paths",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			runDir, runID, err := resolveHistoryRun(args)
+			if err != nil {
+				return err
+			}
+			r, err := store.ReadReport(runDir)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "run:        %s\n", runID)
+			fmt.Fprintf(cmd.OutOrStdout(), "domain:     %s\n", r.Target.Domain)
+			fmt.Fprintf(cmd.OutOrStdout(), "generated:  %s\n", r.GeneratedAt.Format(time.RFC3339))
+			fmt.Fprintf(cmd.OutOrStdout(), "score:      %d/100 %s\n", r.Score.Overall, r.Score.Grade)
+			fmt.Fprintf(cmd.OutOrStdout(), "tools:      %s\n", strings.Join(r.Evidence.Tools.Selected, ","))
+			fmt.Fprintf(cmd.OutOrStdout(), "path:       %s\n", runDir)
+			fmt.Fprintf(cmd.OutOrStdout(), "raw:        %s\n", filepath.Join(runDir, "raw"))
+			fmt.Fprintf(cmd.OutOrStdout(), "findings:   %s\n", filepath.Join(runDir, "findings.json"))
+			fmt.Fprintf(cmd.OutOrStdout(), "json:       %s\n", filepath.Join(runDir, "report.json"))
+			fmt.Fprintf(cmd.OutOrStdout(), "markdown:   %s\n", filepath.Join(runDir, "report.md"))
+			return nil
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "findings <domain> [run|latest]",
+		Short: "Show normalized external tool findings for a stored run",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			runDir, _, err := resolveHistoryRun(args)
+			if err != nil {
+				return err
+			}
+			var findings []audit.ToolFinding
+			data, err := os.ReadFile(filepath.Join(runDir, "findings.json"))
+			if err != nil {
+				return err
+			}
+			if err := json.Unmarshal(data, &findings); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%-10s  %-12s  %-18s  %-32s  %s\n", "SEVERITY", "TOOL", "TYPE", "ASSET", "TITLE")
+			fmt.Fprintf(cmd.OutOrStdout(), "%-10s  %-12s  %-18s  %-32s  %s\n", "--------", "----", "----", "-----", "-----")
+			for _, finding := range findings {
+				fmt.Fprintf(cmd.OutOrStdout(), "%-10s  %-12s  %-18s  %-32s  %s\n", finding.Severity, finding.Tool, finding.Type, finding.Asset, finding.Title)
+			}
+			return nil
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "raw <domain> [run|latest]",
+		Short: "List raw external tool files for a stored run",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			runDir, _, err := resolveHistoryRun(args)
+			if err != nil {
+				return err
+			}
+			rawDir := filepath.Join(runDir, "raw")
+			entries, err := os.ReadDir(rawDir)
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				if entry.IsDir() {
+					continue
+				}
+				info, err := entry.Info()
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%-28s  %8d  %s\n", entry.Name(), info.Size(), filepath.Join(rawDir, entry.Name()))
+			}
+			return nil
+		},
+	})
+	return cmd
+}
+
+func resolveHistoryRun(args []string) (string, string, error) {
+	runID := "latest"
+	if len(args) > 1 {
+		runID = args[1]
+	}
+	return store.ResolveRun(args[0], runID)
 }
 
 func toolsCommand() *cobra.Command {
@@ -300,23 +519,107 @@ func toolsCommand() *cobra.Command {
 func listChecksCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "list-checks",
-		Short: "List available checks",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			all := checks.Registry()
-			sort.Slice(all, func(i, j int) bool { return all[i].Meta().ID < all[j].Meta().ID })
-			for _, check := range all {
-				m := check.Meta()
-				fmt.Fprintf(cmd.OutOrStdout(), "%-42s %-14s %-12s weight=%d severity=%s\n", m.ID, m.Category, m.Mode, m.Weight, m.Severity)
-			}
-			return nil
-		},
+		Short: "List implemented internal Go checks",
+		RunE:  runListInternalChecks,
+	}
+}
+
+func listCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List check registries and catalog sources",
+	}
+	cmd.AddCommand(&cobra.Command{
+		Use:   "internal-checks",
+		Short: "List implemented internal Go checks",
+		RunE:  runListInternalChecks,
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "all-checks",
+		Short: "List canonical atomic checks from the product catalog",
+		RunE:  runListAllChecks,
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "source-catalogs",
+		Short: "List generated source/tool catalogs and item counts",
+		RunE:  runListSourceCatalogs,
+	})
+	return cmd
+}
+
+func runListInternalChecks(cmd *cobra.Command, args []string) error {
+	all := checks.Registry()
+	sort.Slice(all, func(i, j int) bool { return all[i].Meta().ID < all[j].Meta().ID })
+	for _, check := range all {
+		m := check.Meta()
+		fmt.Fprintf(cmd.OutOrStdout(), "%-42s %-14s %-12s weight=%d severity=%s\n", m.ID, m.Category, m.Mode, m.Weight, m.Severity)
+	}
+	return nil
+}
+
+func runListAllChecks(cmd *cobra.Command, args []string) error {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6s  %s\n", "CHECK", "CATEGORY", "MODE", "COVERAGE", "WEIGHT", "TITLE")
+	fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6s  %s\n", "-----", "--------", "----", "--------", "------", "-----")
+	for _, check := range cat.Checks {
+		fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6d  %s\n", check.ID, check.Category, check.Mode, check.CoverageStatus, check.Weight, check.Title)
+	}
+	return nil
+}
+
+func runListSourceCatalogs(cmd *cobra.Command, args []string) error {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		return err
+	}
+	accessByID := map[string]catalog.SourceAccess{}
+	for _, source := range cat.Access {
+		accessByID[source.ID] = source
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%-24s  %-9s  %-8s  %-8s  %10s  %s\n", "SOURCE", "ACCESS", "LOCAL", "DEFAULT", "ITEMS", "PATH")
+	fmt.Fprintf(cmd.OutOrStdout(), "%-24s  %-9s  %-8s  %-8s  %10s  %s\n", "------", "------", "-----", "-------", "-----", "----")
+	for _, source := range cat.SourceCounts {
+		access := ""
+		local := ""
+		included := ""
+		if source.Source == "projectdiscovery" {
+			access = "open_source_free"
+			local = "mixed"
+			included = "false"
+		} else if policy, ok := accessByID[sourcePolicyID(source.Source, source.Path)]; ok {
+			access = policy.Access
+			local = fmt.Sprint(policy.LocalRunnable)
+			included = fmt.Sprint(policy.IncludedByDefault)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "%-24s  %-9s  %-8s  %-8s  %10d  %s\n", source.Source, access, local, included, source.Count, source.Path)
+	}
+	return nil
+}
+
+func sourcePolicyID(source string, path string) string {
+	switch {
+	case source == "nuclei" && strings.Contains(path, "nuclei-template"):
+		return "nuclei_templates"
+	case source == "projectdiscovery":
+		return ""
+	case source == "greenbone":
+		return "greenbone_community_feed"
+	case source == "urlhaus_host":
+		return "urlhaus"
+	case source == "virustotal_domain":
+		return "virustotal_domain_api"
+	default:
+		return source
 	}
 }
 
 func explainCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "explain <check-id>",
-		Short: "Explain one check",
+		Short: "Explain one internal or catalog atomic check",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			for _, check := range checks.Registry() {
@@ -334,8 +637,54 @@ func explainCommand() *cobra.Command {
 				}
 				return nil
 			}
+			cat, err := catalog.LoadEmbedded()
+			if err != nil {
+				return err
+			}
+			if check, ok := cat.FindCheck(args[0]); ok {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\n\n", check.Title)
+				fmt.Fprintf(cmd.OutOrStdout(), "ID: %s\nCategory: %s\nMode: %s\nWeight: %d\nSeverity: %s\nCoverage: %s\n", check.ID, check.Category, check.Mode, check.Weight, check.Severity, check.CoverageStatus)
+				if implemented := formatImplementedBy(check.ImplementedBy); implemented != "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "Implemented by: %s\n", implemented)
+				}
+				if check.Rationale != "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "\nWhy it matters:\n%s\n", check.Rationale)
+				}
+				if check.Remediation != "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "\nHow to fix:\n%s\n", check.Remediation)
+				}
+				return nil
+			}
 			return fmt.Errorf("unknown check %q", args[0])
 		},
+	}
+}
+
+func formatImplementedBy(value any) string {
+	switch v := value.(type) {
+	case nil:
+		return ""
+	case string:
+		return v
+	case []any:
+		parts := make([]string, 0, len(v))
+		for _, item := range v {
+			parts = append(parts, fmt.Sprint(item))
+		}
+		return strings.Join(parts, ", ")
+	case map[string]any:
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		parts := make([]string, 0, len(keys))
+		for _, key := range keys {
+			parts = append(parts, fmt.Sprintf("%s=%v", key, v[key]))
+		}
+		return strings.Join(parts, "; ")
+	default:
+		return fmt.Sprint(v)
 	}
 }
 

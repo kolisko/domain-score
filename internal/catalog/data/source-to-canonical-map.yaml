@@ -1,0 +1,3388 @@
+schema_version: 1
+kind: domain-score.source-to-canonical-map
+updated: "2026-07-05"
+
+purpose: >
+  Mapping layer from source-specific rule, subtest and capability IDs to
+  canonical Domain Score atomic check IDs. Generated source catalogs remain the
+  evidence source of what tools can emit; this file describes how those signals
+  should be normalized for scoring and reporting.
+
+mapping_model:
+  source_id: Stable source-specific atomic id, group id, feed stream or capability id.
+  canonical_id: Existing id from catalog/atomic-checks.yaml.
+  match_type:
+    exact: Match a single source id exactly.
+    prefix: Match all source ids with the given prefix.
+    group: Match a source catalog group or path group.
+    stream: Match a source feed stream.
+  confidence:
+    high: Direct semantic match.
+    medium: Good operational match but may need parser context.
+    low: Broad fallback where precise mapping should be improved later.
+
+mappings:
+  # Nuclei template groups. Individual template IDs stay in
+  # catalog/generated/nuclei-template-index.yaml.
+  - source: nuclei
+    match_type: group
+    source_id: http/cves
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/cves
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/exposed-panels
+    canonical_id: nuclei.exposed_panel
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/default-logins
+    canonical_id: nuclei.default_login_or_credential
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/default-login
+    canonical_id: nuclei.default_login_or_credential
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/takeovers
+    canonical_id: takeover.dangling_dns_or_saas
+    confidence: high
+
+  - source: nuclei
+    match_type: exact
+    source_id: nuclei.azure-takeover-detection
+    canonical_id: takeover.dangling_dns_or_saas
+    confidence: high
+
+  - source: nuclei
+    match_type: exact
+    source_id: nuclei.detect-dangling-cname
+    canonical_id: takeover.dangling_dns_or_saas
+    confidence: high
+
+  - source: nuclei
+    match_type: exact
+    source_id: nuclei.elasticbeanstalk-takeover
+    canonical_id: takeover.dangling_dns_or_saas
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: code/cves
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: javascript/cves
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: headless/cves
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: dast/cves
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: javascript/default-logins
+    canonical_id: nuclei.default_login_or_credential
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/exposures
+    canonical_id: nuclei.file_secret_exposure
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: file/keys
+    canonical_id: nuclei.file_secret_exposure
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: file/logs
+    canonical_id: nuclei.file_secret_exposure
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: file/malware
+    canonical_id: nuclei.malware_or_webshell_indicator
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: file/webshell
+    canonical_id: nuclei.malware_or_webshell_indicator
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: cloud
+    canonical_id: nuclei.cloud_misconfiguration
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/misconfiguration
+    canonical_id: nuclei.http_misconfiguration
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/vulnerabilities
+    canonical_id: nuclei.web_vulnerability_signal
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: dast/vulnerabilities
+    canonical_id: nuclei.web_vulnerability_signal
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: dast/ai
+    canonical_id: nuclei.web_vulnerability_signal
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: headless/vulnerabilities
+    canonical_id: nuclei.web_vulnerability_signal
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/cnvd
+    canonical_id: nuclei.known_advisory_template
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/fuzzing
+    canonical_id: nuclei.fuzzing_probe_signal
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/miscellaneous
+    canonical_id: nuclei.miscellaneous_public_signal
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: http/global-matchers
+    canonical_id: nuclei.miscellaneous_public_signal
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: http/osint
+    canonical_id: nuclei.osint_public_exposure
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/technologies
+    canonical_id: nuclei.technology_detection
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: headless/technologies
+    canonical_id: nuclei.technology_detection
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/token-spray
+    canonical_id: nuclei.token_spray_or_credential_attack
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/credential-stuffing
+    canonical_id: nuclei.token_spray_or_credential_attack
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/iot
+    canonical_id: nuclei.iot_exposure
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/detection
+    canonical_id: nuclei.network_detection
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/misconfig
+    canonical_id: nuclei.network_misconfiguration
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/exposures
+    canonical_id: nuclei.network_exposure
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/enumeration
+    canonical_id: nuclei.network_enumeration_signal
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/vulnerabilities
+    canonical_id: nuclei.network_vulnerability_signal
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/backdoor
+    canonical_id: nuclei.backdoor_indicator
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/jarm
+    canonical_id: nuclei.jarm_fingerprint
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/honeypot
+    canonical_id: nuclei.honeypot_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: http/honeypot
+    canonical_id: nuclei.honeypot_detected
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: network/c2
+    canonical_id: nuclei.c2_or_hostile_infrastructure_indicator
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: ssl/c2
+    canonical_id: nuclei.c2_or_hostile_infrastructure_indicator
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: file/audit
+    canonical_id: nuclei.file_configuration_audit
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: file/android
+    canonical_id: nuclei.android_static_analysis
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: file/nodejs
+    canonical_id: nuclei.code_static_vulnerability
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: file/electron
+    canonical_id: nuclei.code_static_vulnerability
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: code
+    canonical_id: nuclei.code_static_vulnerability
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: javascript
+    canonical_id: nuclei.code_static_vulnerability
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: workflows
+    canonical_id: nuclei.workflow_product_bundle
+    confidence: high
+
+  - source: nuclei
+    match_type: group
+    source_id: dns
+    canonical_id: nuclei.dns_template_signal
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: file
+    canonical_id: nuclei.code_static_vulnerability
+    confidence: low
+
+  - source: nuclei
+    match_type: group
+    source_id: headless
+    canonical_id: nuclei.headless_interaction_signal
+    confidence: medium
+
+  - source: nuclei
+    match_type: group
+    source_id: ssl
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: medium
+
+  - source: nuclei
+    match_type: prefix
+    source_id: nuclei.
+    canonical_id: vulnerability.nuclei_template_match
+    confidence: low
+
+  # ZAP plugin IDs from generated ZAP rule catalog.
+  - source: zap
+    match_type: exact
+    source_id: zap.2
+    canonical_id: web.private_ip_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.3
+    canonical_id: web.session_id_in_url
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10009
+    canonical_id: web.in_page_banner_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10010
+    canonical_id: http.cookie_missing_httponly
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10011
+    canonical_id: http.cookie_missing_secure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10015
+    canonical_id: performance.cache_headers_present
+    confidence: medium
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10017
+    canonical_id: web.subresource_integrity_missing
+    confidence: medium
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10020
+    canonical_id: http.frame_protection_missing
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10021
+    canonical_id: http.x_content_type_options_missing
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10023
+    canonical_id: web.application_error_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10024
+    canonical_id: web.sensitive_information_in_url
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10025
+    canonical_id: web.sensitive_information_in_referrer
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10027
+    canonical_id: web.suspicious_comments_public
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10028
+    canonical_id: web.offsite_redirect
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10030
+    canonical_id: web.user_controlled_charset
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10031
+    canonical_id: web.user_controlled_html_attribute
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10035
+    canonical_id: http.hsts_present
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10036
+    canonical_id: http.server_header_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10037
+    canonical_id: http.powered_by_header_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10038
+    canonical_id: http.csp_missing_or_weak
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10040
+    canonical_id: web.mixed_content
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10054
+    canonical_id: http.cookie_missing_samesite
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10055
+    canonical_id: web.csp_unsafe_inline_or_eval
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10098
+    canonical_id: http.cors_too_permissive
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10108
+    canonical_id: web.reverse_tabnabbing
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10115
+    canonical_id: web.malicious_polyfill_domain
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.0
+    canonical_id: web.directory_browsing_enabled
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.6
+    canonical_id: web.path_traversal_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.7
+    canonical_id: web.remote_file_include_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10019
+    canonical_id: web.content_type_missing
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10029
+    canonical_id: web.cookie_poisoning_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10032
+    canonical_id: web.viewstate_insecure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10033
+    canonical_id: web.directory_browsing_enabled
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10034
+    canonical_id: vulnerability.heartbleed_signal
+    confidence: medium
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10039
+    canonical_id: web.header_information_leak
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10041
+    canonical_id: http.insecure_form_transition
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10042
+    canonical_id: http.insecure_form_transition
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10043
+    canonical_id: web.user_controlled_javascript_event
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10044
+    canonical_id: web.large_redirect_sensitive_leak_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10045
+    canonical_id: web.source_code_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10047
+    canonical_id: web.insecure_http_available
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10048
+    canonical_id: vulnerability.shellshock_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10050
+    canonical_id: web.cached_response_observable
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10052
+    canonical_id: web.header_information_leak
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10056
+    canonical_id: web.debug_token_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10057
+    canonical_id: web.username_hash_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10058
+    canonical_id: web.get_for_post_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10061
+    canonical_id: web.header_information_leak
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10062
+    canonical_id: privacy.pii_disclosure_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10096
+    canonical_id: web.timestamp_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10097
+    canonical_id: web.hash_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10104
+    canonical_id: web.user_agent_behavior_variation
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10105
+    canonical_id: auth.insecure_authentication_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10106
+    canonical_id: web.insecure_http_available
+    confidence: medium
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10109
+    canonical_id: web.modern_app_detected
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10116
+    canonical_id: inventory.tool_version_outdated
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.10202
+    canonical_id: web.csrf_protection_missing_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.20015
+    canonical_id: vulnerability.heartbleed_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.20017
+    canonical_id: web.source_code_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.20018
+    canonical_id: vulnerability.remote_code_execution_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.20019
+    canonical_id: web.external_redirect_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.30001
+    canonical_id: web.buffer_overflow_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.30002
+    canonical_id: web.format_string_error_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40003
+    canonical_id: web.crlf_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40008
+    canonical_id: web.parameter_tampering_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40009
+    canonical_id: web.server_side_include_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40012
+    canonical_id: web.cross_site_scripting_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40014
+    canonical_id: web.cross_site_scripting_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40018
+    canonical_id: web.sql_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40019
+    canonical_id: web.sql_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40020
+    canonical_id: web.sql_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40021
+    canonical_id: web.sql_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40022
+    canonical_id: web.sql_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40024
+    canonical_id: web.sql_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40027
+    canonical_id: web.sql_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40028
+    canonical_id: web.sensitive_file_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40029
+    canonical_id: web.sensitive_file_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40032
+    canonical_id: web.sensitive_file_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40034
+    canonical_id: web.sensitive_file_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40035
+    canonical_id: web.sensitive_file_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40042
+    canonical_id: web.sensitive_file_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40043
+    canonical_id: vulnerability.log4shell_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40044
+    canonical_id: web.xml_entity_expansion_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40045
+    canonical_id: vulnerability.spring4shell_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.40048
+    canonical_id: vulnerability.remote_code_execution_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90001
+    canonical_id: web.viewstate_insecure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90002
+    canonical_id: web.java_serialization_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90003
+    canonical_id: web.subresource_integrity_missing
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90011
+    canonical_id: web.charset_mismatch
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90017
+    canonical_id: web.xslt_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90019
+    canonical_id: web.code_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90020
+    canonical_id: web.os_command_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90021
+    canonical_id: web.xpath_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90022
+    canonical_id: web.application_error_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90023
+    canonical_id: web.xxe_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90024
+    canonical_id: web.padding_oracle_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90033
+    canonical_id: web.cookie_loose_scope
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90034
+    canonical_id: web.cloud_metadata_exposure_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90035
+    canonical_id: web.server_side_template_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90036
+    canonical_id: web.server_side_template_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.90037
+    canonical_id: web.os_command_injection_signal
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.120000
+    canonical_id: web.browser_storage_sensitive_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.120001
+    canonical_id: web.browser_storage_sensitive_disclosure
+    confidence: high
+
+  - source: zap
+    match_type: exact
+    source_id: zap.120002
+    canonical_id: web.browser_storage_sensitive_disclosure
+    confidence: high
+
+  # testssl JSON IDs.
+  - source: testssl
+    match_type: exact
+    source_id: testssl.SSLv2
+    canonical_id: tls.weak_protocol_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.SSLv3
+    canonical_id: tls.weak_protocol_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS1
+    canonical_id: tls.weak_protocol_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS1_1
+    canonical_id: tls.weak_protocol_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cipher_strength_score
+    canonical_id: tls.weak_cipher_enabled
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.FS
+    canonical_id: tls.forward_secrecy_missing
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_chain_of_trust
+    canonical_id: tls.chain_incomplete_or_untrusted
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_subjectAltName
+    canonical_id: tls.hostname_mismatch
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HSTS
+    canonical_id: http.hsts_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.banner_server
+    canonical_id: http.server_header_disclosure
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.banner_application
+    canonical_id: service.version_disclosure
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.heartbleed
+    canonical_id: vulnerability.heartbleed_signal
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.CCS
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.BEAST
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.BREACH
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.CRIME_TLS
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.DROWN
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.FREAK
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.LOGJAM
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.LUCKY13
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.ticketbleed
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.ROBOT
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.starttls_injection
+    canonical_id: tls.starttls_injection_vulnerable
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.secure_renego
+    canonical_id: tls.secure_renegotiation_missing_or_vulnerable
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.opossum
+    canonical_id: tls.opossum_vulnerable
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.winshock
+    canonical_id: tls.winshock_vulnerable
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.clientsimulation
+    canonical_id: tls.client_compatibility_matrix
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.ALPN
+    canonical_id: tls.alpn_protocols_advertised
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.DH_groups
+    canonical_id: tls.dh_group_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.DNS_CAArecord
+    canonical_id: dns.caa_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.DNS_HTTPS_rrecord
+    canonical_id: dns.https_record_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.GREASE
+    canonical_id: tls.grease_compatibility
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_SPKImatch
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_SPKIs
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_age
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_backup
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_error
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_notice
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_preload
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HPKP_subdomains
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HTTP_clock_skew
+    canonical_id: http.clock_skew_detected
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HTTP_headerAge
+    canonical_id: http.age_header_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HTTP_headerTime
+    canonical_id: http.clock_skew_detected
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.HTTP_status_code
+    canonical_id: seo.http_success_status
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.NPN
+    canonical_id: tls.npn_supported
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.OCSP_stapling
+    canonical_id: tls.ocsp_stapling_present
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.POODLE_SSL
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.POODLE_TLS
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.QUIC
+    canonical_id: web.http3_supported
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.RC4
+    canonical_id: tls.rc4_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.SSL_sessionID_support
+    canonical_id: tls.session_resumption_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.SWEET32
+    canonical_id: tls.sweet32_vulnerable
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS1_2
+    canonical_id: tls.modern_protocol_supported
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS1_3
+    canonical_id: tls.modern_protocol_supported
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS_extensions
+    canonical_id: tls.extensions_inventory
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS_misses_extension_23
+    canonical_id: tls.extensions_inventory
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS_session_ticket
+    canonical_id: tls.session_ticket_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.TLS_timestamp
+    canonical_id: tls.timestamp_disclosure
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.banner_reverseproxy
+    canonical_id: web.header_information_leak
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_caIssuers
+    canonical_id: tls.certificate_authority_metadata
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_certificatePolicies_EV
+    canonical_id: tls.certificate_usage_metadata
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_compression
+    canonical_id: tls.certificate_compression_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_crlDistributionPoints
+    canonical_id: tls.certificate_revocation_metadata
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_eTLS
+    canonical_id: tls.certificate_usage_metadata
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_extKeyUsage
+    canonical_id: tls.certificate_usage_metadata
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_keySize
+    canonical_id: tls.certificate_key_size_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_keyUsage
+    canonical_id: tls.certificate_usage_metadata
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_mustStapleExtension
+    canonical_id: tls.certificate_must_staple
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_numbers
+    canonical_id: tls.certificate_usage_metadata
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_ocspURL
+    canonical_id: tls.ocsp_responder_available
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cert_signatureAlgorithm
+    canonical_id: tls.certificate_signature_algorithm_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.certificate_compression
+    canonical_id: tls.certificate_compression_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.certificate_transparency
+    canonical_id: tls.certificate_transparency_scts
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cipher_order
+    canonical_id: tls.cipher_order_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cipher_strength_score_weighted
+    canonical_id: tls.weak_cipher_enabled
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cipherlist
+    canonical_id: tls.cipher_inventory
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.clientAuth
+    canonical_id: tls.client_certificate_auth_supported
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.clientAuth_CA_list
+    canonical_id: tls.client_certificate_auth_supported
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cookie_bigip_f5
+    canonical_id: http.bigip_cookie_detected
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cookie_count
+    canonical_id: http.cookie_inventory
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cookie_httponly
+    canonical_id: http.cookie_missing_httponly
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.cookie_secure
+    canonical_id: http.cookie_missing_secure
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.early_data
+    canonical_id: tls.early_data_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.fallback_SCSV
+    canonical_id: tls.fallback_scsv_supported
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.final_score
+    canonical_id: tls.score_summary
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.host_certificate_Problem
+    canonical_id: tls.certificate_present_and_valid
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.http_get
+    canonical_id: seo.http_success_status
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.insecure_client_renego
+    canonical_id: tls.client_renegotiation_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.insecure_redirect
+    canonical_id: http.insecure_redirect_detected
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.intermediate_cert_badOCSP
+    canonical_id: tls.certificate_revocation_metadata
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.ipv4_in_header
+    canonical_id: network.ip_address_disclosed_in_header
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.key_exchange_score
+    canonical_id: tls.score_summary
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.key_exchange_score_weighted
+    canonical_id: tls.score_summary
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.optimal_proto
+    canonical_id: tls.modern_protocol_supported
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.overall_grade
+    canonical_id: tls.score_summary
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.pre_128cipher
+    canonical_id: tls.weak_cipher_enabled
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.protocol_support_score
+    canonical_id: tls.score_summary
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.protocol_support_score_weighted
+    canonical_id: tls.score_summary
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.rating_doc
+    canonical_id: tls.score_summary
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.rating_spec
+    canonical_id: tls.score_summary
+    confidence: medium
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.scanProblem
+    canonical_id: tls.scan_problem
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.secure_client_renego
+    canonical_id: tls.client_renegotiation_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.security_headers
+    canonical_id: http.security_headers_summary
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.service
+    canonical_id: service.tls_service_detected
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.sessionresumption_ID
+    canonical_id: tls.session_resumption_policy
+    confidence: high
+
+  - source: testssl
+    match_type: exact
+    source_id: testssl.sessionresumption_ticket
+    canonical_id: tls.session_resumption_policy
+    confidence: high
+
+  # Internet.nl categories and subtests.
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.web-ipv6.
+    canonical_id: standards.internetnl_web_ipv6
+    confidence: high
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.web-dnssec.
+    canonical_id: standards.internetnl_web_dnssec
+    confidence: high
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.web-tls.
+    canonical_id: standards.internetnl_web_https
+    confidence: high
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.web-appsecpriv.
+    canonical_id: standards.internetnl_web_appsec_privacy
+    confidence: high
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.web-rpki.
+    canonical_id: standards.internetnl_web_rpki
+    confidence: high
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.mail-auth.
+    canonical_id: standards.internetnl_mail_auth
+    confidence: high
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.mail-dnssec.
+    canonical_id: standards.internetnl_mail_auth
+    confidence: medium
+    note: Internet.nl groups mail DNSSEC separately in source subtests; Domain Score currently folds mail DNSSEC into mail standards/auth coverage.
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.mail-ipv6.
+    canonical_id: standards.internetnl_mail_auth
+    confidence: medium
+    note: Internet.nl groups mail IPv6 separately in source subtests; Domain Score currently lacks a dedicated mail IPv6 canonical standards check.
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.mail-tls.
+    canonical_id: standards.internetnl_mail_starttls_dane
+    confidence: high
+
+  - source: internetnl
+    match_type: prefix
+    source_id: internetnl.mail-rpki.
+    canonical_id: standards.internetnl_mail_rpki
+    confidence: high
+
+  # ProjectDiscovery capability mappings.
+  - source: projectdiscovery
+    match_type: prefix
+    source_id: projectdiscovery.subfinder.
+    canonical_id: inventory.subdomains
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.subfinder.json-source-attribution
+    canonical_id: inventory.subdomain_source_attribution
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.subfinder.active-resolution
+    canonical_id: inventory.subdomains
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.status-code
+    canonical_id: inventory.http_services
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.content-length
+    canonical_id: web.response_fingerprint
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.content-type
+    canonical_id: web.response_fingerprint
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.redirect-location
+    canonical_id: web.redirect_chain_inventory
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.favicon-hash
+    canonical_id: web.favicon_fingerprint
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.response-hash
+    canonical_id: web.response_fingerprint
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.jarm
+    canonical_id: web.jarm_fingerprint
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.response-time
+    canonical_id: performance.ttfb_reasonable
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.title
+    canonical_id: seo.title_present
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.web-server
+    canonical_id: http.server_header_disclosure
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.technology-detect
+    canonical_id: service.version_disclosure
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.cpe-detect
+    canonical_id: web.technology_cpe_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.wordpress-detect
+    canonical_id: web.wordpress_component_inventory
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.websocket-detect
+    canonical_id: web.websocket_service_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.extract-fqdn
+    canonical_id: web.fqdn_disclosure_in_response
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.asn
+    canonical_id: network.asn_inventory
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.ip-cname
+    canonical_id: inventory.http_services
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.cdn-waf
+    canonical_id: network.cdn_or_waf_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.screenshot
+    canonical_id: web.screenshot_inventory
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.csp-probe
+    canonical_id: http.csp_missing_or_weak
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.tls-grab
+    canonical_id: tls.certificate_present_and_valid
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.http2
+    canonical_id: web.http2_supported
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.pipeline
+    canonical_id: web.http_pipeline_supported
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.vhost
+    canonical_id: web.virtual_host_response_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.page-type-login
+    canonical_id: web.login_page_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.page-type-captcha
+    canonical_id: web.captcha_or_bot_protection_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.httpx.page-type-parked
+    canonical_id: web.parked_page_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.open-ports
+    canonical_id: network.open_ports
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.top-ports
+    canonical_id: network.open_ports
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.passive-internetdb
+    canonical_id: network.open_ports
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.host-discovery
+    canonical_id: network.host_alive
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.service-discovery
+    canonical_id: service.unexpected_public_service
+    confidence: medium
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.service-version
+    canonical_id: network.service_version_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.reverse-ptr
+    canonical_id: network.reverse_ptr_inventory
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.cdn-detection
+    canonical_id: network.cdn_or_waf_detected
+    confidence: high
+
+  - source: projectdiscovery
+    match_type: exact
+    source_id: projectdiscovery.naabu.ip-version-scope
+    canonical_id: network.open_ports
+    confidence: low
+
+  # Amass capability mappings.
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.passive-enumeration
+    canonical_id: inventory.subdomains
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.active-certificate-grab
+    canonical_id: inventory.certificate_transparency_names
+    confidence: medium
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.zone-transfer-attempt
+    canonical_id: dns.axfr_not_allowed
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.altered-name-generation
+    canonical_id: dns.generated_or_bruteforced_name
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.bruteforce
+    canonical_id: dns.generated_or_bruteforced_name
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.recursive-bruteforce
+    canonical_id: dns.generated_or_bruteforced_name
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.asn-scope
+    canonical_id: inventory.asn_cidr_scope
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.cidr-scope
+    canonical_id: inventory.asn_cidr_scope
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.address-scope
+    canonical_id: inventory.asn_cidr_scope
+    confidence: medium
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.source-include-exclude
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.enum.resolver-selection
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.subs.names
+    canonical_id: inventory.subdomains
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.subs.addresses
+    canonical_id: inventory.subdomains
+    confidence: medium
+
+  - source: amass
+    match_type: exact
+    source_id: amass.subs.asn-summary
+    canonical_id: inventory.asn_cidr_scope
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.assoc.relationship-walk
+    canonical_id: inventory.asset_graph_relationship
+    confidence: high
+
+  - source: amass
+    match_type: exact
+    source_id: amass.track.new-assets
+    canonical_id: inventory.asset_graph_relationship
+    confidence: medium
+
+  - source: amass
+    match_type: exact
+    source_id: amass.viz.asset-graph
+    canonical_id: inventory.asset_graph_relationship
+    confidence: high
+
+  # Greenbone feed streams.
+  - source: greenbone
+    match_type: stream
+    source_id: nvt
+    canonical_id: vulnerability.greenbone_nvt_match
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Fedora Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Debian Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: SuSE Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Ubuntu Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: "Windows : Microsoft Bulletins"
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: CentOS Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Gentoo Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: FreeBSD Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Oracle Linux Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Red Hat Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Mandrake Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Amazon Linux Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Mac OS X Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Huawei EulerOS Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: openSUSE Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: openEuler Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Mageia Linux Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Slackware Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: JunOS Local Security Checks
+    canonical_id: greenbone.network_device_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: F5 Local Security Checks
+    canonical_id: greenbone.network_device_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Palo Alto PAN-OS Local Security Checks
+    canonical_id: greenbone.network_device_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: FortiOS Local Security Checks
+    canonical_id: greenbone.network_device_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Citrix Xenserver Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: VMware Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: HP-UX Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Solaris Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: AIX Local Security Checks
+    canonical_id: greenbone.vendor_security_advisory_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Web application abuses
+    canonical_id: greenbone.web_application_vulnerability
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: General
+    canonical_id: greenbone.general_nvt_security_check
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Windows
+    canonical_id: greenbone.general_nvt_security_check
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Settings
+    canonical_id: greenbone.general_nvt_security_check
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Product detection
+    canonical_id: greenbone.product_detection
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Service detection
+    canonical_id: greenbone.product_detection
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Denial of Service
+    canonical_id: greenbone.denial_of_service_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Databases
+    canonical_id: greenbone.database_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Web Servers
+    canonical_id: greenbone.web_server_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Policy
+    canonical_id: greenbone.policy_or_compliance_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Compliance
+    canonical_id: greenbone.policy_or_compliance_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: IT-Grundschutz
+    canonical_id: greenbone.policy_or_compliance_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: IT-Grundschutz-15
+    canonical_id: greenbone.policy_or_compliance_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: IT-Grundschutz-deprecated
+    canonical_id: greenbone.policy_or_compliance_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Default Accounts
+    canonical_id: greenbone.default_account_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Credentials
+    canonical_id: greenbone.default_account_check
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: CISCO
+    canonical_id: greenbone.network_device_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Huawei
+    canonical_id: greenbone.network_device_security_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: SSL and TLS
+    canonical_id: greenbone.tls_or_crypto_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Malware
+    canonical_id: greenbone.malware_or_compromise_check
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Gain a shell remotely
+    canonical_id: greenbone.malware_or_compromise_check
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Remote file access
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: FTP
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: SMTP problems
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: SNMP
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: RPC
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Useless services
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Brute force attacks
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Peer-To-Peer File Sharing
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Port scanners
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: low
+
+  - source: greenbone
+    match_type: group
+    source_id: Nmap NSE
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Nmap NSE net
+    canonical_id: greenbone.remote_file_or_service_abuse
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: Buffer overflow
+    canonical_id: greenbone.buffer_overflow_or_memory_corruption
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: Privilege escalation
+    canonical_id: greenbone.privilege_escalation_check
+    confidence: high
+
+  - source: greenbone
+    match_type: prefix
+    source_id: greenbone.nvt.
+    canonical_id: vulnerability.greenbone_nvt_match
+    confidence: high
+
+  - source: greenbone
+    match_type: stream
+    source_id: notus
+    canonical_id: vulnerability.notus_package_vulnerability
+    confidence: high
+
+  - source: greenbone
+    match_type: prefix
+    source_id: greenbone.notus.
+    canonical_id: vulnerability.notus_package_vulnerability
+    confidence: high
+
+  - source: greenbone
+    match_type: stream
+    source_id: scap
+    canonical_id: vulnerability.known_cve_detected
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: critical
+    canonical_id: greenbone.scap_cve_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: high
+    canonical_id: greenbone.scap_cve_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: medium
+    canonical_id: greenbone.scap_cve_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: low
+    canonical_id: greenbone.scap_cve_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: info
+    canonical_id: greenbone.scap_cve_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: none
+    canonical_id: greenbone.scap_cve_metadata
+    confidence: medium
+
+  - source: greenbone
+    match_type: prefix
+    source_id: greenbone.scap.
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: greenbone
+    match_type: stream
+    source_id: cert
+    canonical_id: vulnerability.known_cve_detected
+    confidence: medium
+
+  - source: greenbone
+    match_type: group
+    source_id: cert-bund
+    canonical_id: greenbone.cert_bund_advisory
+    confidence: high
+
+  - source: greenbone
+    match_type: group
+    source_id: dfn-cert
+    canonical_id: greenbone.dfn_cert_advisory
+    confidence: high
+
+  - source: greenbone
+    match_type: prefix
+    source_id: greenbone.cert.
+    canonical_id: vulnerability.known_cve_detected
+    confidence: medium
+
+  - source: greenbone
+    match_type: stream
+    source_id: gvmd-data
+    canonical_id: compliance.greenbone_policy_match
+    confidence: medium
+
+  - source: greenbone
+    match_type: stream
+    source_id: enterprise-feed
+    canonical_id: vulnerability.greenbone_nvt_match
+    confidence: medium
+    access: paid
+
+  - source: greenbone
+    match_type: stream
+    source_id: scan-config
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: prefix
+    source_id: greenbone.scan-config.
+    canonical_id: compliance.greenbone_policy_match
+    confidence: high
+
+  - source: greenbone
+    match_type: stream
+    source_id: port-list
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: prefix
+    source_id: greenbone.port-list.
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: stream
+    source_id: report-format
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: greenbone
+    match_type: prefix
+    source_id: greenbone.report-format.
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  # OSINT provider/source catalogs.
+  - source: subfinder
+    match_type: prefix
+    source_id: subfinder.provider.
+    canonical_id: inventory.subdomain_source_attribution
+    confidence: high
+
+  - source: amass
+    match_type: prefix
+    source_id: amass.provider.
+    canonical_id: inventory.subdomain_source_attribution
+    confidence: high
+
+  # Public no-key reputation and exposure sources.
+  - source: shodan_internetdb
+    match_type: exact
+    source_id: shodan_internetdb.ports
+    canonical_id: network.open_ports
+    confidence: high
+
+  - source: shodan_internetdb
+    match_type: exact
+    source_id: shodan_internetdb.vulns
+    canonical_id: vulnerability.known_cve_detected
+    confidence: high
+
+  - source: shodan_internetdb
+    match_type: exact
+    source_id: shodan_internetdb.cpes
+    canonical_id: service.version_disclosure
+    confidence: medium
+
+  - source: shodan_internetdb
+    match_type: exact
+    source_id: shodan_internetdb.hostnames
+    canonical_id: inventory.subdomains
+    confidence: high
+
+  - source: shodan_internetdb
+    match_type: prefix
+    source_id: shodan_internetdb.
+    canonical_id: inventory.tool_capability_metadata
+    confidence: low
+
+  - source: urlhaus_host
+    match_type: exact
+    source_id: urlhaus_host.blacklists.spamhaus_dbl
+    canonical_id: reputation.spamhaus_dbl_listed
+    confidence: high
+
+  - source: urlhaus_host
+    match_type: exact
+    source_id: urlhaus_host.blacklists.surbl
+    canonical_id: reputation.surbl_listed
+    confidence: high
+
+  - source: urlhaus_host
+    match_type: exact
+    source_id: urlhaus_host.query_status
+    canonical_id: inventory.tool_capability_metadata
+    confidence: medium
+
+  - source: urlhaus_host
+    match_type: exact
+    source_id: urlhaus_host.host
+    canonical_id: inventory.tool_capability_metadata
+    confidence: low
+
+  - source: urlhaus_host
+    match_type: exact
+    source_id: urlhaus_host.firstseen
+    canonical_id: reputation.urlhaus_listed
+    confidence: medium
+
+  - source: urlhaus_host
+    match_type: prefix
+    source_id: urlhaus_host.urls.
+    canonical_id: reputation.urlhaus_listed
+    confidence: high
+
+  - source: urlhaus_host
+    match_type: prefix
+    source_id: urlhaus_host.
+    canonical_id: reputation.urlhaus_listed
+    confidence: medium
+
+  - source: spamhaus_dbl
+    match_type: exact
+    source_id: spamhaus_dbl.ip_query_prohibited
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: spamhaus_dbl
+    match_type: exact
+    source_id: spamhaus_dbl.dnsbl_typo
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: spamhaus_dbl
+    match_type: exact
+    source_id: spamhaus_dbl.anonymous_public_resolver
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: spamhaus_dbl
+    match_type: exact
+    source_id: spamhaus_dbl.excessive_queries
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: spamhaus_dbl
+    match_type: prefix
+    source_id: spamhaus_dbl.
+    canonical_id: reputation.spamhaus_dbl_listed
+    confidence: high
+
+  - source: surbl
+    match_type: exact
+    source_id: surbl.blocked
+    canonical_id: inventory.tool_capability_metadata
+    confidence: high
+
+  - source: surbl
+    match_type: prefix
+    source_id: surbl.
+    canonical_id: reputation.surbl_listed
+    confidence: high
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.last_analysis_stats.malicious
+    canonical_id: reputation.virustotal_domain_signal
+    confidence: high
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.last_analysis_stats.suspicious
+    canonical_id: reputation.virustotal_domain_signal
+    confidence: high
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.last_analysis_results
+    canonical_id: reputation.virustotal_domain_signal
+    confidence: high
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.reputation
+    canonical_id: reputation.virustotal_domain_signal
+    confidence: high
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.total_votes.malicious
+    canonical_id: reputation.virustotal_domain_signal
+    confidence: high
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.categories
+    canonical_id: reputation.virustotal_domain_signal
+    confidence: medium
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.last_dns_records
+    canonical_id: inventory.tool_capability_metadata
+    confidence: medium
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.last_https_certificate
+    canonical_id: tls.certificate_present_and_valid
+    confidence: medium
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.jarm
+    canonical_id: web.jarm_fingerprint
+    confidence: high
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.registrar
+    canonical_id: transparency.rdap_registration_available
+    confidence: medium
+
+  - source: virustotal_domain
+    match_type: exact
+    source_id: virustotal_domain.attributes.whois
+    canonical_id: transparency.rdap_registration_available
+    confidence: medium
+
+  - source: virustotal_domain
+    match_type: prefix
+    source_id: virustotal_domain.
+    canonical_id: inventory.tool_capability_metadata
+    confidence: low
+
+  # MDN / Mozilla HTTP Observatory expectations.
+  - source: mozilla_observatory
+    match_type: group
+    source_id: content-security-policy
+    canonical_id: http.csp_missing_or_weak
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: subresource-integrity
+    canonical_id: web.subresource_integrity_missing
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: strict-transport-security
+    canonical_id: http.hsts_present
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: exact
+    source_id: mozilla_observatory.cookies-session-without-httponly-flag
+    canonical_id: http.cookie_missing_httponly
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: exact
+    source_id: mozilla_observatory.cookies-session-without-secure-flag
+    canonical_id: http.cookie_missing_secure
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: exact
+    source_id: mozilla_observatory.cookies-session-without-secure-flag-but-protected-by-hsts
+    canonical_id: http.cookie_missing_secure
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: exact
+    source_id: mozilla_observatory.cookies-without-secure-flag
+    canonical_id: http.cookie_missing_secure
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: exact
+    source_id: mozilla_observatory.cookies-without-secure-flag-but-protected-by-hsts
+    canonical_id: http.cookie_missing_secure
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: exact
+    source_id: mozilla_observatory.cookies-samesite-flag-invalid
+    canonical_id: http.cookie_missing_samesite
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: exact
+    source_id: mozilla_observatory.cookies-anticsrf-without-samesite-flag
+    canonical_id: http.cookie_missing_samesite
+    confidence: medium
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: cookies
+    canonical_id: http.cookie_missing_secure
+    confidence: low
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: x-frame-options
+    canonical_id: http.frame_protection_missing
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: redirection
+    canonical_id: http.https_redirect
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: referrer-policy
+    canonical_id: http.referrer_policy_missing
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: x-content-type-options
+    canonical_id: http.x_content_type_options_missing
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: cross-origin-resource-sharing
+    canonical_id: http.cors_too_permissive
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: cross-origin-resource-policy
+    canonical_id: http.coop_coep_corp_missing_or_weak
+    confidence: high
+
+  - source: mozilla_observatory
+    match_type: group
+    source_id: generic
+    canonical_id: ai.extractable_text_available
+    confidence: low
+
+  # SSL Labs API fields.
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.serverSignature
+    canonical_id: http.server_header_disclosure
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.vulnBeast
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.heartbleed
+    canonical_id: vulnerability.heartbleed_signal
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.openSslCcs
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.openSSLLuckyMinus20
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.ticketbleed
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.bleichenbacher
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.zombiePoodle
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.goldenDoodle
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.zeroLengthPaddingOracle
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.sleepingPoodle
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.poodle
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.freak
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.vulnBeast
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.heartbleed
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.openSslCcs
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.openSSLLuckyMinus20
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.ticketbleed
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.bleichenbacher
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.zombiePoodle
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.goldenDoodle
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.zeroLengthPaddingOracle
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.sleepingPoodle
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.poodle
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.freak
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.drown
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.supportsRc4
+    canonical_id: tls.rc4_enabled
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.rc4WithModern
+    canonical_id: tls.rc4_enabled
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.rc4Only
+    canonical_id: tls.rc4_enabled
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.supportsCBC
+    canonical_id: tls.weak_cipher_enabled
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.suite.q
+    canonical_id: tls.weak_cipher_enabled
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.protocol.q
+    canonical_id: tls.weak_protocol_enabled
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.forwardSecrecy
+    canonical_id: tls.forward_secrecy_missing
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.renegSupport
+    canonical_id: tls.secure_renegotiation_missing_or_vulnerable
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.hasSct
+    canonical_id: tls.certificate_transparency_scts
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.sct
+    canonical_id: tls.certificate_transparency_scts
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.dnsCaa
+    canonical_id: dns.caa_present
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.issues
+    canonical_id: tls.certificate_present_and_valid
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.certificate_chain.issues
+    canonical_id: tls.chain_incomplete_or_untrusted
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint.grade
+    canonical_id: tls.grade_summary
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint.gradeTrustIgnored
+    canonical_id: tls.grade_summary
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint.hasWarnings
+    canonical_id: tls.grade_summary
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint.isExceptional
+    canonical_id: tls.grade_summary
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.prefixDelegation
+    canonical_id: dns.apex_www_canonical
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.nonPrefixDelegation
+    canonical_id: dns.apex_www_canonical
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.sessionResumption
+    canonical_id: tls.session_resumption_policy
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.compressionMethods
+    canonical_id: tls.compression_enabled
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.supportsNpn
+    canonical_id: tls.npn_supported
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.supportsAlpn
+    canonical_id: tls.alpn_protocols_advertised
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.alpnProtocols
+    canonical_id: tls.alpn_protocols_advertised
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.sessionTickets
+    canonical_id: tls.session_ticket_policy
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.ocspStapling
+    canonical_id: tls.ocsp_stapling_present
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.staplingRevocationStatus
+    canonical_id: tls.certificate_revocation_metadata
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.sniRequired
+    canonical_id: tls.sni_required
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.httpStatusCode
+    canonical_id: seo.http_success_status
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.protocolIntolerance
+    canonical_id: tls.protocol_or_extension_intolerance
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.miscIntolerance
+    canonical_id: tls.protocol_or_extension_intolerance
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.heartbeat
+    canonical_id: tls.heartbeat_extension_supported
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.poodleTls
+    canonical_id: tls.poodle_vulnerable
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.fallbackScsv
+    canonical_id: tls.fallback_scsv_supported
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.drownErrors
+    canonical_id: tls.scan_problem
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.drownVulnerable
+    canonical_id: tls.known_protocol_vulnerability
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.endpoint_details.zeroRTTEnabled
+    canonical_id: tls.early_data_enabled
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.simulation.keySize
+    canonical_id: tls.certificate_key_size_policy
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.simulation.sigAlg
+    canonical_id: tls.certificate_signature_algorithm_policy
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.hsts_policy.status
+    canonical_id: http.hsts_present
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.hsts_preload.status
+    canonical_id: http.hsts_present
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.hpkp_policy.status
+    canonical_id: http.hpkp_header_present
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.sigAlg
+    canonical_id: tls.certificate_signature_algorithm_policy
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.revocationStatus
+    canonical_id: tls.certificate_revocation_metadata
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.crlRevocationStatus
+    canonical_id: tls.certificate_revocation_metadata
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.ocspRevocationStatus
+    canonical_id: tls.certificate_revocation_metadata
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.mustStaple
+    canonical_id: tls.certificate_must_staple
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.validationType
+    canonical_id: tls.certificate_usage_metadata
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.keySize
+    canonical_id: tls.certificate_key_size_policy
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.keyStrength
+    canonical_id: tls.certificate_key_size_policy
+    confidence: high
+
+  - source: ssl_labs
+    match_type: exact
+    source_id: ssl_labs.cert.keyKnownDebianInsecure
+    canonical_id: vulnerability.debian_weak_key_signal
+    confidence: high
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.cert.
+    canonical_id: tls.certificate_present_and_valid
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.hsts_
+    canonical_id: http.hsts_present
+    confidence: medium
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint.
+    canonical_id: tls.testssl_signal_requires_review
+    confidence: low
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.endpoint_details.
+    canonical_id: tls.testssl_signal_requires_review
+    confidence: low
+
+  - source: ssl_labs
+    match_type: prefix
+    source_id: ssl_labs.
+    canonical_id: tls.testssl_signal_requires_review
+    confidence: low
+
+  # Broad fallback families. Exact mappings above win during normalization.
+  - source: testssl
+    match_type: prefix
+    source_id: testssl.cert_
+    canonical_id: tls.certificate_present_and_valid
+    confidence: low
+
+  - source: testssl
+    match_type: prefix
+    source_id: testssl.TLS
+    canonical_id: tls.weak_protocol_enabled
+    confidence: low
+
+  - source: testssl
+    match_type: prefix
+    source_id: testssl.SSL
+    canonical_id: tls.weak_protocol_enabled
+    confidence: low
+
+  - source: testssl
+    match_type: prefix
+    source_id: testssl.
+    canonical_id: tls.testssl_signal_requires_review
+    confidence: low
+
+  - source: zap
+    match_type: prefix
+    source_id: zap.
+    canonical_id: web.zap_passive_or_active_alert
+    confidence: low
+    note: Broad fallback for currently unmapped ZAP plugin IDs; exact mappings should be added as individual plugin semantics are reviewed.

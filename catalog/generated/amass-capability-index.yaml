@@ -1,0 +1,174 @@
+schema_version: 1
+kind: domain-score.amass-capability-index
+generated_from: 'ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a'
+generated_at: "2026-07-05"
+capabilities_indexed: 17
+notes:
+  - Amass exposes attack-surface mapping capabilities rather than fixed vulnerability rule IDs.
+  - Capability IDs use amass.<command>.<capability> and runtime values remain findings.
+command_counts:
+  enum: 11
+  subs: 3
+  assoc: 1
+  track: 1
+  viz: 1
+capabilities:
+  - atomic_id: 'amass.enum.passive-enumeration'
+    title: 'Passive domain enumeration'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'domain'
+      - 'hostname'
+      - 'source'
+  - atomic_id: 'amass.enum.active-certificate-grab'
+    title: 'Active certificate name grabbing'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'certificate_name'
+  - atomic_id: 'amass.enum.zone-transfer-attempt'
+    title: 'DNS zone transfer attempt'
+    source: 'enum'
+    category: 'dns'
+    mode: aggressive
+    severity: high
+    evidence_model:
+      - 'domain'
+      - 'nameserver'
+      - 'axfr_result'
+  - atomic_id: 'amass.enum.altered-name-generation'
+    title: 'Altered-name generation'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'candidate_hostname'
+      - 'generation_method'
+  - atomic_id: 'amass.enum.bruteforce'
+    title: 'DNS brute-force enumeration'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'candidate_hostname'
+      - 'resolved'
+  - atomic_id: 'amass.enum.recursive-bruteforce'
+    title: 'Recursive DNS brute-force enumeration'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'hostname'
+      - 'depth'
+  - atomic_id: 'amass.enum.asn-scope'
+    title: 'ASN-based scope input'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'asn'
+      - 'related_asset'
+  - atomic_id: 'amass.enum.cidr-scope'
+    title: 'CIDR-based scope input'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'cidr'
+      - 'related_asset'
+  - atomic_id: 'amass.enum.address-scope'
+    title: 'Address/range-based scope input'
+    source: 'enum'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'ip_range'
+      - 'related_asset'
+  - atomic_id: 'amass.enum.source-include-exclude'
+    title: 'Data source include/exclude control'
+    source: 'enum'
+    category: 'scan_control'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'source_name'
+      - 'included'
+      - 'excluded'
+  - atomic_id: 'amass.enum.resolver-selection'
+    title: 'Trusted/untrusted resolver selection'
+    source: 'enum'
+    category: 'scan_control'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'resolver'
+      - 'trust_level'
+  - atomic_id: 'amass.subs.names'
+    title: 'Discovered subdomain names output'
+    source: 'subs'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'domain'
+      - 'hostname'
+  - atomic_id: 'amass.subs.addresses'
+    title: 'Discovered subdomain address output'
+    source: 'subs'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'hostname'
+      - 'ip'
+  - atomic_id: 'amass.subs.asn-summary'
+    title: 'ASN summary output'
+    source: 'subs'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'asn'
+      - 'organization'
+      - 'count'
+  - atomic_id: 'amass.assoc.relationship-walk'
+    title: 'Open Asset Model relationship walk'
+    source: 'assoc'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'source_asset'
+      - 'relationship'
+      - 'target_asset'
+  - atomic_id: 'amass.track.new-assets'
+    title: 'New asset tracking across enumerations'
+    source: 'track'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'asset'
+      - 'first_seen'
+  - atomic_id: 'amass.viz.asset-graph'
+    title: 'Asset graph visualization'
+    source: 'viz'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'graph_file'
+      - 'asset_count'
+      - 'edge_count'

@@ -263,15 +263,19 @@ type ToolStatus struct {
 }
 
 type ToolFinding struct {
-	Source         string         `json:"source"`
-	Tool           string         `json:"tool"`
-	Asset          string         `json:"asset,omitempty"`
-	Type           string         `json:"type,omitempty"`
-	Severity       string         `json:"severity,omitempty"`
-	Title          string         `json:"title"`
-	Evidence       map[string]any `json:"evidence,omitempty"`
-	Recommendation string         `json:"recommendation,omitempty"`
-	RawFile        string         `json:"raw_file,omitempty"`
+	Source            string         `json:"source"`
+	Tool              string         `json:"tool"`
+	Asset             string         `json:"asset,omitempty"`
+	Type              string         `json:"type,omitempty"`
+	Severity          string         `json:"severity,omitempty"`
+	Title             string         `json:"title"`
+	AtomicCheckID     string         `json:"atomic_check_id,omitempty"`
+	SourceRuleID      string         `json:"source_rule_id,omitempty"`
+	SourceRuleGroup   string         `json:"source_rule_group,omitempty"`
+	MappingConfidence string         `json:"mapping_confidence,omitempty"`
+	Evidence          map[string]any `json:"evidence,omitempty"`
+	Recommendation    string         `json:"recommendation,omitempty"`
+	RawFile           string         `json:"raw_file,omitempty"`
 }
 
 type Report struct {

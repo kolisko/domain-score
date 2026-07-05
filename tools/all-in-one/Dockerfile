@@ -35,7 +35,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     python3 \
     python3-pip \
+    rsync \
     && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system gvm \
+    && useradd --system --gid gvm --home-dir /var/lib/gvm --shell /usr/sbin/nologin gvm \
+    && mkdir -p /var/lib/gvm \
+    && chown -R gvm:gvm /var/lib/gvm
 
 RUN git init /opt/testssl.sh \
     && git -C /opt/testssl.sh remote add origin https://github.com/testssl/testssl.sh \
@@ -55,7 +61,7 @@ RUN git init /opt/internetnl \
     && rm -rf /opt/internetnl/.git
 RUN python3 -m pip install --break-system-packages --no-cache-dir \
     gvm-tools==${GVM_TOOLS_VERSION} \
-    greenbone-feed-sync==${GREENBONE_FEED_SYNC_VERSION} || true
+    greenbone-feed-sync==${GREENBONE_FEED_SYNC_VERSION}
 
 COPY --from=go-tools /go/bin/subfinder /usr/local/bin/subfinder
 COPY --from=go-tools /go/bin/httpx /usr/local/bin/httpx

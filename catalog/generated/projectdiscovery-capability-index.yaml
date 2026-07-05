@@ -1,0 +1,418 @@
+schema_version: 1
+kind: domain-score.projectdiscovery-capability-index
+generated_from: 'ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a'
+generated_at: "2026-07-05"
+capabilities_indexed: 43
+notes:
+  - These tools expose repeatable evidence capabilities rather than source rule IDs.
+  - Capability IDs use projectdiscovery.<tool>.<capability> and should map to canonical Domain Score checks.
+  - Runtime verification found the inspected image's httpx command currently resolves to Python HTTPX, so ProjectDiscovery httpx runtime output requires an image fix.
+tool_counts:
+  httpx: 27
+  naabu: 9
+  subfinder: 7
+capabilities:
+  - atomic_id: 'projectdiscovery.subfinder.passive-subdomain-discovery'
+    title: 'Passive subdomain discovery'
+    source: 'subfinder'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'domain'
+      - 'hostname'
+      - 'source'
+  - atomic_id: 'projectdiscovery.subfinder.source-selection'
+    title: 'Passive source include/exclude selection'
+    source: 'subfinder'
+    category: 'scan_control'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'source_name'
+      - 'included'
+      - 'excluded'
+  - atomic_id: 'projectdiscovery.subfinder.recursive-source-discovery'
+    title: 'Recursive-capable source discovery'
+    source: 'subfinder'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'domain'
+      - 'hostname'
+      - 'recursive_source'
+  - atomic_id: 'projectdiscovery.subfinder.all-sources-discovery'
+    title: 'All configured passive sources discovery'
+    source: 'subfinder'
+    category: 'attack_surface'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'domain'
+      - 'hostname'
+      - 'source'
+  - atomic_id: 'projectdiscovery.subfinder.json-source-attribution'
+    title: 'JSONL source attribution for discovered names'
+    source: 'subfinder'
+    category: 'evidence_quality'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'hostname'
+      - 'sources'
+  - atomic_id: 'projectdiscovery.subfinder.active-resolution'
+    title: 'Active resolution of discovered subdomains'
+    source: 'subfinder'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'hostname'
+      - 'ip'
+  - atomic_id: 'projectdiscovery.subfinder.source-statistics'
+    title: 'Passive source statistics'
+    source: 'subfinder'
+    category: 'evidence_quality'
+    mode: safe
+    severity: info
+    evidence_model:
+      - 'source_name'
+      - 'count'
+  - atomic_id: 'projectdiscovery.httpx.status-code'
+    title: 'HTTP status code probe'
+    source: 'httpx'
+    category: 'web_inventory'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'status_code'
+  - atomic_id: 'projectdiscovery.httpx.content-length'
+    title: 'HTTP content length probe'
+    source: 'httpx'
+    category: 'web_inventory'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'content_length'
+  - atomic_id: 'projectdiscovery.httpx.content-type'
+    title: 'HTTP content type probe'
+    source: 'httpx'
+    category: 'web_inventory'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'content_type'
+  - atomic_id: 'projectdiscovery.httpx.redirect-location'
+    title: 'HTTP redirect location probe'
+    source: 'httpx'
+    category: 'quality'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'location'
+  - atomic_id: 'projectdiscovery.httpx.favicon-hash'
+    title: 'Favicon hash fingerprint'
+    source: 'httpx'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'favicon_hash'
+  - atomic_id: 'projectdiscovery.httpx.response-hash'
+    title: 'HTTP response body hash fingerprint'
+    source: 'httpx'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'hash_type'
+      - 'hash'
+  - atomic_id: 'projectdiscovery.httpx.jarm'
+    title: 'JARM TLS fingerprint'
+    source: 'httpx'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'port'
+      - 'jarm'
+  - atomic_id: 'projectdiscovery.httpx.response-time'
+    title: 'HTTP response time measurement'
+    source: 'httpx'
+    category: 'performance'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'response_time'
+  - atomic_id: 'projectdiscovery.httpx.title'
+    title: 'HTML title extraction'
+    source: 'httpx'
+    category: 'web_inventory'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'title'
+  - atomic_id: 'projectdiscovery.httpx.web-server'
+    title: 'HTTP server header extraction'
+    source: 'httpx'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: low
+    evidence_model:
+      - 'url'
+      - 'server'
+  - atomic_id: 'projectdiscovery.httpx.technology-detect'
+    title: 'Technology fingerprint detection'
+    source: 'httpx'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'technology'
+  - atomic_id: 'projectdiscovery.httpx.cpe-detect'
+    title: 'CPE technology mapping'
+    source: 'httpx'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: medium
+    evidence_model:
+      - 'url'
+      - 'cpe'
+  - atomic_id: 'projectdiscovery.httpx.wordpress-detect'
+    title: 'WordPress component detection'
+    source: 'httpx'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: medium
+    evidence_model:
+      - 'url'
+      - 'component'
+      - 'version'
+  - atomic_id: 'projectdiscovery.httpx.websocket-detect'
+    title: 'WebSocket service detection'
+    source: 'httpx'
+    category: 'protocol_inventory'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'websocket'
+  - atomic_id: 'projectdiscovery.httpx.ip-cname'
+    title: 'Resolved IP and CNAME extraction'
+    source: 'httpx'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'ip'
+      - 'cname'
+  - atomic_id: 'projectdiscovery.httpx.extract-fqdn'
+    title: 'FQDN extraction from response'
+    source: 'httpx'
+    category: 'exposure'
+    mode: aggressive
+    severity: low
+    evidence_model:
+      - 'url'
+      - 'fqdn'
+  - atomic_id: 'projectdiscovery.httpx.asn'
+    title: 'ASN enrichment'
+    source: 'httpx'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'ip'
+      - 'asn'
+      - 'organization'
+  - atomic_id: 'projectdiscovery.httpx.cdn-waf'
+    title: 'CDN/WAF detection'
+    source: 'httpx'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'provider'
+  - atomic_id: 'projectdiscovery.httpx.screenshot'
+    title: 'Web page screenshot capture'
+    source: 'httpx'
+    category: 'quality'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'screenshot_file'
+  - atomic_id: 'projectdiscovery.httpx.tls-grab'
+    title: 'TLS metadata grab'
+    source: 'httpx'
+    category: 'tls'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'port'
+      - 'tls'
+  - atomic_id: 'projectdiscovery.httpx.csp-probe'
+    title: 'CSP header probe'
+    source: 'httpx'
+    category: 'http_security'
+    mode: aggressive
+    severity: low
+    evidence_model:
+      - 'url'
+      - 'csp'
+  - atomic_id: 'projectdiscovery.httpx.http2'
+    title: 'HTTP/2 support probe'
+    source: 'httpx'
+    category: 'protocol_inventory'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'http2'
+  - atomic_id: 'projectdiscovery.httpx.pipeline'
+    title: 'HTTP/1.1 pipeline support probe'
+    source: 'httpx'
+    category: 'protocol_inventory'
+    mode: aggressive
+    severity: low
+    evidence_model:
+      - 'url'
+      - 'pipeline'
+  - atomic_id: 'projectdiscovery.httpx.vhost'
+    title: 'Virtual host response probe'
+    source: 'httpx'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'vhost'
+      - 'status_code'
+  - atomic_id: 'projectdiscovery.httpx.page-type-login'
+    title: 'Login page classification'
+    source: 'httpx'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'page_type'
+  - atomic_id: 'projectdiscovery.httpx.page-type-captcha'
+    title: 'CAPTCHA or bot protection classification'
+    source: 'httpx'
+    category: 'quality'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'url'
+      - 'page_type'
+  - atomic_id: 'projectdiscovery.httpx.page-type-parked'
+    title: 'Parked page classification'
+    source: 'httpx'
+    category: 'quality'
+    mode: aggressive
+    severity: low
+    evidence_model:
+      - 'url'
+      - 'page_type'
+  - atomic_id: 'projectdiscovery.naabu.open-ports'
+    title: 'Open TCP port inventory'
+    source: 'naabu'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: medium
+    evidence_model:
+      - 'host'
+      - 'ip'
+      - 'port'
+  - atomic_id: 'projectdiscovery.naabu.top-ports'
+    title: 'Top port-set scanning'
+    source: 'naabu'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: medium
+    evidence_model:
+      - 'host'
+      - 'port'
+  - atomic_id: 'projectdiscovery.naabu.passive-internetdb'
+    title: 'Passive Shodan InternetDB open port evidence'
+    source: 'naabu'
+    category: 'external_public'
+    mode: safe
+    severity: medium
+    evidence_model:
+      - 'host'
+      - 'port'
+      - 'source'
+  - atomic_id: 'projectdiscovery.naabu.host-discovery'
+    title: 'Host discovery probing'
+    source: 'naabu'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'ip'
+      - 'method'
+  - atomic_id: 'projectdiscovery.naabu.service-discovery'
+    title: 'Service discovery probe'
+    source: 'naabu'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: medium
+    evidence_model:
+      - 'host'
+      - 'port'
+      - 'service'
+  - atomic_id: 'projectdiscovery.naabu.service-version'
+    title: 'Service version probe'
+    source: 'naabu'
+    category: 'fingerprint'
+    mode: aggressive
+    severity: medium
+    evidence_model:
+      - 'host'
+      - 'port'
+      - 'product'
+      - 'version'
+  - atomic_id: 'projectdiscovery.naabu.cdn-detection'
+    title: 'CDN/WAF detection for scan scope'
+    source: 'naabu'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'provider'
+  - atomic_id: 'projectdiscovery.naabu.reverse-ptr'
+    title: 'Reverse PTR lookup'
+    source: 'naabu'
+    category: 'attack_surface'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'ip'
+      - 'ptr_name'
+  - atomic_id: 'projectdiscovery.naabu.ip-version-scope'
+    title: 'IPv4/IPv6 scan scope selection'
+    source: 'naabu'
+    category: 'scan_control'
+    mode: aggressive
+    severity: info
+    evidence_model:
+      - 'host'
+      - 'ip_version'

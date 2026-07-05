@@ -20,11 +20,14 @@ domain-score scan example.com --format json,md --out ./reports
 domain-score scan https://example.com --out - --format json
 domain-score scan example.com --details findings
 domain-score scan example.com --details-check dns.dmarc
+domain-score scan example.com --check dns.dmarc
+domain-score scan example.com --check network.open_ports
 domain-score scan example.com --tools all
 domain-score tools doctor
 domain-score tools pull
 domain-score scan example.com --aggressive
 domain-score list-checks
+domain-score list internal-checks
 domain-score explain dns.dnssec_enabled
 domain-score update
 ```
@@ -48,10 +51,23 @@ Useful flags:
 - `--sort weight|status|category|id|none`: sort console and Markdown check rows. Default is `weight`.
 - `--details off|findings|all`: add detailed explanations to console and Markdown reports. Default is `off`.
 - `--details-check check.id`: add a detailed explanation for one concrete check.
+- `--check check.id`: run one internal or catalog atomic check. Catalog checks use their mapped internal check or external Docker tool when available.
 - `--tools none|all|subfinder,httpx,naabu,nuclei,amass,testssl,zap,internetnl,greenbone`: run Docker-based external tools. Default is `none`.
 - `--tools-pull auto|always|never`: control external tools image pulls. Default is `auto`.
 - `--tools-timeout 60m`: timeout for external Docker tools.
 - `--out -`: print selected report formats to stdout.
+
+`list-checks` and `list internal-checks` show executable built-in Go checks.
+The broader product catalog of atomic checks lives in
+`catalog/atomic-checks.yaml`; it is the development specification for desired
+checks, coverage mappings and future external tool normalization. The bounded
+v1 catalog audit is documented in `docs/catalog-v1-audit.md`, and source
+research evidence is tracked in `catalog/source-research-evidence.yaml`.
+
+An atomic check is a type of audited condition, not a concrete finding. For
+example, `network.open_ports` is one check that can produce many findings such
+as port 22 and 443. Runtime values belong to findings, while tools such as
+naabu, ZAP, Nuclei, testssl or Greenbone are evidence sources.
 
 Public third-party checks that do not need user API keys run in the default
 safe profile when available: Spamhaus DBL, SURBL, URLhaus host reputation,
@@ -202,6 +218,7 @@ check sections.
 ```sh
 go test ./...
 go run ./cmd/domain-score list-checks
+go run ./cmd/domain-score list internal-checks
 go run ./cmd/domain-score scan example.com --out -
 ```
 

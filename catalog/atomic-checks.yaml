@@ -1,0 +1,4711 @@
+schema_version: 1
+kind: domain-score.atomic-check-catalog
+status: product_definition
+updated: "2026-07-05"
+
+purpose: >
+  Product catalog of atomic checks that Domain Score should be able to reason
+  about. This is not the runtime list of currently implemented Go checks.
+  Runtime scan findings must reference one of these atomic check definitions
+  whenever possible.
+
+core_model:
+  atomic_check: >
+    A type of audited property, weakness, exposure, compliance requirement or
+    vulnerability condition.
+  finding: >
+    A concrete occurrence of an atomic check on a concrete asset. One atomic
+    check can produce many findings in one scan.
+  tool: >
+    An evidence source. A tool is not an atomic check. One tool can produce
+    evidence for many checks.
+
+identity_rules:
+  - Do not create separate atomic checks for runtime values such as port 22,
+    URL /login, host app.example.com or IP 203.0.113.10.
+  - Runtime values belong to findings.evidence or findings.asset, not to the
+    atomic check id.
+  - It is valid to create separate atomic checks for stable external rule ids
+    when the rule id represents a distinct condition, for example a ZAP plugin
+    id, a Greenbone NVT OID, a Nuclei template id or a CVE id.
+  - Prefer canonical domain-score ids for cross-tool concepts, and keep
+    source-specific ids as coverage mappings.
+  - If two tools detect the same condition, keep one atomic check with multiple
+    evidence sources.
+
+coverage_status_values:
+  planned: Identified in the product catalog but not implemented yet.
+  partial: Some evidence exists, but mapping/scoring/remediation is incomplete.
+  implemented: Implemented as an internal check or normalized external mapping.
+  external_raw: Raw tool output exists, but it is not yet mapped cleanly.
+  not_applicable: Intentionally not applicable for Domain Score.
+
+default_fields:
+  id: Stable product id.
+  title: Human-readable label.
+  category: Scoring/reporting category.
+  mode: safe or aggressive.
+  severity: info, low, medium, high or critical.
+  weight: Default scoring weight.
+  coverage_status: Current implementation coverage.
+  implemented_by: Internal check ids, external tools, rule ids or source feeds.
+  finding_cardinality: none, one, many or dynamic_rule.
+  evidence_model: Runtime fields expected in findings.
+  rationale: Why this check matters.
+  remediation: What a user should do when the check fails.
+
+source_catalogs:
+  manifest: catalog/generated/source-catalog-manifest.yaml
+  source_to_canonical_map: catalog/source-to-canonical-map.yaml
+  source_mapping_coverage: catalog/generated/source-mapping-coverage.yaml
+  source_access_policy: catalog/source-access-policy.yaml
+  internal_go:
+    role: Native safe and aggressive checks implemented in Go.
+    runtime_command: domain-score list-checks
+  zap_baseline:
+    role: OWASP ZAP passive web application/security header findings.
+    stable_rule_key: pluginid
+    generated_index: catalog/generated/zap-rule-index.yaml
+  testssl:
+    role: TLS protocol, cipher and vulnerability checks.
+    stable_rule_key: id
+    generated_index: catalog/generated/testssl-jsonid-index.yaml
+  nuclei:
+    role: Template-based exposure, CVE, misconfiguration and takeover checks.
+    stable_rule_key: template-id
+    generated_index: catalog/generated/nuclei-template-index.yaml
+  greenbone:
+    role: Network vulnerability tests from Greenbone Community Feed.
+    stable_rule_key: nvt_oid
+    generated_index: catalog/generated/greenbone-feed-capability-index.yaml
+    generated_nvt_index: catalog/generated/greenbone-nvt-index.yaml.gz
+    generated_notus_index: catalog/generated/greenbone-notus-advisory-index.yaml.gz
+    generated_cert_index: catalog/generated/greenbone-cert-advisory-index.yaml.gz
+    generated_gvmd_data_index: catalog/generated/greenbone-gvmd-data-object-index.yaml
+    generated_scap_index: catalog/generated/greenbone-scap-cve-index.yaml.gz
+  internetnl:
+    role: Public standards categories for web and mail.
+    stable_rule_key: category
+    generated_index: catalog/generated/internetnl-subtest-index.yaml
+  projectdiscovery:
+    role: Subdomain inventory, HTTP probing, port inventory and template scans.
+    generated_index: catalog/generated/projectdiscovery-capability-index.yaml
+  amass:
+    role: Attack surface mapping, subdomain enumeration and asset relationship graphing.
+    generated_index: catalog/generated/amass-capability-index.yaml
+  public_reputation_sources:
+    role: DNSBL, URL reputation, malware and exposure reputation sources.
+
+research_sources:
+  zap_baseline:
+    docs:
+      - https://www.zaproxy.org/docs/docker/baseline-scan/
+      - https://github.com/zaproxy/zaproxy/tree/main/docker
+    evidence:
+      - ZAP Baseline runs spidering plus passive scanning and does not perform active attacks.
+      - Baseline rule configuration uses stable rule identifiers that can be mapped to atomic checks.
+      - The default baseline config includes rule ids such as 10010, 10011, 10012, 10015, 10016, 10020, 10021, 10202, 2 and 3.
+  projectdiscovery:
+    docs:
+      - https://docs.projectdiscovery.io/opensource/httpx/usage
+      - https://docs.projectdiscovery.io/opensource/nuclei/running
+    generated_index: catalog/generated/projectdiscovery-capability-index.yaml
+    evidence:
+      - httpx probes status, title, web server, technologies, CPE, favicon hash, JARM, HTTP/2, pipeline, websocket, TLS data, CDN/WAF, ASN and response metrics.
+      - naabu discovers ports and can perform service discovery and service-version probes.
+      - subfinder performs passive subdomain discovery and can include source attribution in JSONL.
+      - nuclei filters and emits results by template-id, tags, severity and protocol type.
+      - Generated capability index contains 43 repeatable ProjectDiscovery evidence capabilities for subfinder, httpx and naabu.
+      - Inspected tools image currently resolves httpx to the Python HTTPX CLI wrapper, so ProjectDiscovery httpx runtime findings require an image fix.
+  amass:
+    docs:
+      - https://owasp-amass.github.io/
+      - https://github.com/owasp-amass/amass
+    generated_index: catalog/generated/amass-capability-index.yaml
+    evidence:
+      - Runtime help confirms Amass v5.1.1 subcommands assoc, engine, enum, subs, track and viz.
+      - Generated capability index contains 17 attack-surface mapping capabilities covering passive enumeration, active certificate grabs, AXFR attempts, brute force, ASN/CIDR scope and asset graph outputs.
+  nuclei_templates_snapshot:
+    source: ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a
+    generated_summary: catalog/generated/nuclei-template-summary.yaml
+    generated_index: catalog/generated/nuclei-template-index.yaml
+    nuclei_version: v3.10.0
+    templates_count_observed: 13419
+    templates_indexed: 13375
+    top_level_template_groups:
+      - cloud
+      - file
+      - ssl
+      - javascript
+      - http
+      - network
+      - dns
+      - workflows
+      - code
+      - dast
+    evidence:
+      - Nuclei template-id is a stable source-specific rule id when a template describes one distinct condition.
+      - Template groups include cves, exposures, misconfiguration, takeovers, default-logins, exposed-panels, technologies, malware, webshell and cloud configuration checks.
+  testssl:
+    docs:
+      - https://github.com/testssl/testssl.sh
+    generated_index: catalog/generated/testssl-jsonid-index.yaml
+    evidence:
+      - testssl.sh exposes protocol, cipher, forward secrecy, server defaults, server preference, headers, client simulation and vulnerability checks.
+      - Vulnerability flags include Heartbleed, CCS injection, Ticketbleed, Opossum, ROBOT, STARTTLS injection, renegotiation, CRIME, BREACH, POODLE, TLS_FALLBACK_SCSV, SWEET32, BEAST, LUCKY13, Winshock, FREAK, LOGJAM, DROWN and RC4.
+      - STARTTLS modes include ftp, smtp, lmtp, pop3, imap, xmpp, xmpp-server, telnet, ldap, nntp, sieve, postgres and mysql.
+      - Generated index contains 107 testssl JSON IDs extracted from fileout/jsonID usage in the open-source script.
+  zap_addons_snapshot:
+    source: ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a
+    generated_index: catalog/generated/zap-rule-index.yaml
+    evidence:
+      - Generated index contains 104 ZAP rule IDs extracted from English help HTML bundled in installed ZAP add-ons.
+      - Passive scan rules are marked safe; active scan rules from ascanrules are marked aggressive.
+  greenbone:
+    docs:
+      - https://greenbone.github.io/docs/latest/22.4/container/index.html
+      - https://github.com/greenbone/gvm-tools
+    generated_index: catalog/generated/greenbone-feed-capability-index.yaml
+    generated_nvt_index: catalog/generated/greenbone-nvt-index.yaml.gz
+    evidence:
+      - Greenbone Community Edition is open source and free to run, but it is a persistent multi-service stack, not a one-shot CLI.
+      - The container stack includes gvmd, gsad, ospd-openvas, openvasd, Redis, PostgreSQL, vulnerability-tests, notus-data, scap-data and CERT feed data.
+      - Atomic source-specific checks should be generated from NVT OIDs, CVEs and compliance policies when a running feed is available.
+      - Inspected tools image contains greenbone-feed-sync, gvm-cli and rsync; NASL/Notus/CERT/GVMD/SCAP feed data is synced to an external cache and not stored inside the image.
+      - Greenbone Enterprise Feed requires a paid key; Community Feed streams are tracked as community_free.
+      - Generated NVT, Notus, CERT, GVMD data-object and SCAP CVE indexes are produced from synced Community feed files.
+  internetnl:
+    docs:
+      - https://github.com/internetstandards/Internet.nl
+      - https://internet.nl/
+    generated_index: catalog/generated/internetnl-subtest-index.yaml
+    evidence:
+      - Public Internet.nl web and mail tests cover standards categories such as IPv6, DNSSEC, HTTPS, appsec/privacy, RPKI, mail authentication and STARTTLS/DANE.
+      - Generated index contains 76 active Internet.nl subtests extracted statically from checks/categories.py and scoring constants.
+
+checks:
+  - id: network.open_ports
+    title: Public open TCP ports inventory
+    category: attack_surface
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_results: [tools.open_ports]
+      tools: [naabu, shodan_internetdb]
+    finding_cardinality: many
+    evidence_model: [host, ip, port, protocol, source]
+    rationale: Publicly reachable services define the externally attackable surface.
+    remediation: Close unnecessary ports, restrict access, or document expected exposure.
+
+  - id: service.unexpected_public_service
+    title: Unexpected public service
+    category: attack_surface
+    mode: aggressive
+    severity: medium
+    weight: 6
+    coverage_status: partial
+    implemented_by:
+      tools: [naabu, httpx, nuclei, greenbone]
+    finding_cardinality: many
+    evidence_model: [host, port, service, protocol, reason]
+    rationale: Services outside the expected web/mail/DNS set often indicate accidental exposure.
+    remediation: Validate business need, restrict by firewall/VPN, or harden the service.
+
+  - id: service.version_disclosure
+    title: Service or product version disclosure
+    category: fingerprint
+    mode: aggressive
+    severity: low
+    weight: 3
+    coverage_status: partial
+    implemented_by:
+      tools: [httpx, zap, testssl, nuclei, greenbone]
+      zap_plugin_ids: ["10036", "10037", "10061"]
+    finding_cardinality: many
+    evidence_model: [asset, protocol, header, banner, product, version]
+    rationale: Version disclosure helps attackers select known exploits and target old components.
+    remediation: Hide unnecessary version banners and keep disclosed components patched.
+
+  - id: service.default_or_sample_content
+    title: Default, sample or placeholder content exposed
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei, zap]
+    finding_cardinality: many
+    evidence_model: [url, matched_pattern, technology]
+    rationale: Default pages often reveal platform setup and unfinished deployment state.
+    remediation: Remove sample content and replace default pages with production content.
+
+  - id: dns.a_record_present
+    title: Apex A record exists
+    category: dns
+    mode: safe
+    severity: medium
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.a_record]
+    finding_cardinality: one
+    evidence_model: [records]
+    rationale: A domain without an address record usually cannot serve the expected website.
+    remediation: Configure an A record for the apex or document why the domain is not web-facing.
+
+  - id: dns.aaaa_record_present
+    title: IPv6 AAAA record exists
+    category: dns
+    mode: safe
+    severity: low
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.ipv6]
+    finding_cardinality: one
+    evidence_model: [records]
+    rationale: IPv6 improves reachability and is required by some modern standards programs.
+    remediation: Add and monitor AAAA records for public web and mail services.
+
+  - id: dns.nameservers_present
+    title: Authoritative nameservers configured
+    category: dns
+    mode: safe
+    severity: high
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.nameservers]
+    finding_cardinality: one
+    evidence_model: [ns_records]
+    rationale: Without authoritative nameservers the domain cannot be resolved reliably.
+    remediation: Configure at least two reliable authoritative nameservers.
+
+  - id: dns.soa_present
+    title: SOA record exists
+    category: dns
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.soa]
+    finding_cardinality: one
+    evidence_model: [soa_record]
+    rationale: SOA indicates the authoritative DNS zone is properly published.
+    remediation: Fix authoritative DNS zone publication.
+
+  - id: dns.txt_records_present
+    title: TXT records inventory
+    category: dns
+    mode: safe
+    severity: info
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.txt]
+    finding_cardinality: one
+    evidence_model: [txt_records]
+    rationale: TXT records expose important security, ownership and service integration signals.
+    remediation: Review TXT records for stale verification tokens and missing policies.
+
+  - id: dns.caa_present
+    title: CAA policy exists
+    category: dns_security
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.caa]
+    finding_cardinality: one
+    evidence_model: [caa_records]
+    rationale: CAA limits which certificate authorities can issue certificates for the domain.
+    remediation: Publish CAA records for approved certificate authorities.
+
+  - id: dns.dnssec_enabled
+    title: DNSSEC enabled
+    category: dns_security
+    mode: safe
+    severity: medium
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.dnssec_enabled]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [ds_records, dnskey_records, validation_status]
+    rationale: DNSSEC protects DNS answers from tampering when validating resolvers are used.
+    remediation: Enable DNSSEC at the DNS provider and registrar.
+
+  - id: dns.ttl_sanity
+    title: DNS TTL sanity
+    category: dns
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.ttl_sanity]
+    finding_cardinality: one
+    evidence_model: [min_ttl, max_ttl]
+    rationale: Extremely low or high TTL values can hurt reliability and operational agility.
+    remediation: Use TTL values appropriate for stable production records.
+
+  - id: dns.wildcard_enabled
+    title: Wildcard DNS exists
+    category: dns
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.wildcard]
+    finding_cardinality: one
+    evidence_model: [wildcard_records]
+    rationale: Wildcard DNS can hide typos, confuse inventory and increase attack surface.
+    remediation: Remove wildcard DNS unless it is intentionally required and monitored.
+
+  - id: dns.apex_www_canonical
+    title: Apex and www canonicality
+    category: dns
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.www_canonical]
+    finding_cardinality: one
+    evidence_model: [apex, www, redirect_or_address_relation]
+    rationale: Inconsistent apex/www handling causes SEO, certificate and user confusion.
+    remediation: Pick one canonical host and redirect the other consistently.
+
+  - id: dns.axfr_not_allowed
+    title: DNS zone transfer is not allowed
+    category: dns_security
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [aggressive.axfr]
+      tools: [amass]
+    finding_cardinality: many
+    evidence_model: [nameserver, transfer_status, leaked_records]
+    rationale: Open AXFR can leak the full DNS zone and internal naming structure.
+    remediation: Restrict zone transfers to approved secondary nameservers only.
+
+  - id: email.mx_present
+    title: MX records exist
+    category: email_security
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.mx]
+    finding_cardinality: one
+    evidence_model: [mx_records]
+    rationale: MX records define mail receiving infrastructure and influence mail security checks.
+    remediation: Configure MX records or explicitly document that the domain does not receive mail.
+
+  - id: email.spf_present
+    title: SPF policy exists
+    category: email_security
+    mode: safe
+    severity: high
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.spf]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [spf_record, mechanisms]
+    rationale: SPF reduces sender spoofing by declaring authorized sending infrastructure.
+    remediation: Publish a single SPF TXT record with accurate sender mechanisms.
+
+  - id: email.spf_policy_too_permissive
+    title: SPF policy is too permissive
+    category: email_security
+    mode: safe
+    severity: medium
+    weight: 4
+    coverage_status: partial
+    implemented_by:
+      internal_check_ids: [dns.spf]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [spf_record, qualifier, mechanisms]
+    rationale: Permissive SPF policies reduce spoofing protection.
+    remediation: Use a stricter SPF policy and remove broad includes or +all.
+
+  - id: email.dmarc_present
+    title: DMARC policy exists
+    category: email_security
+    mode: safe
+    severity: high
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.dmarc]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [dmarc_record, policy]
+    rationale: DMARC aligns SPF/DKIM results and tells receivers how to handle spoofed mail.
+    remediation: Publish a DMARC record at _dmarc with reporting and an enforcement path.
+
+  - id: email.dmarc_policy_not_enforcing
+    title: DMARC policy is not enforcing
+    category: email_security
+    mode: safe
+    severity: medium
+    weight: 4
+    coverage_status: partial
+    implemented_by:
+      internal_check_ids: [dns.dmarc]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [policy, subdomain_policy, pct]
+    rationale: p=none only monitors mail and does not ask receivers to reject spoofed mail.
+    remediation: Move from p=none to quarantine or reject after monitoring false positives.
+
+  - id: email.dkim_selector_present
+    title: DKIM selector detected
+    category: email_security
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.dkim_common_selectors]
+      tools: [internetnl]
+    finding_cardinality: many
+    evidence_model: [selector, txt_record]
+    rationale: DKIM signatures improve sender authentication and DMARC alignment.
+    remediation: Enable DKIM signing for mail platforms and publish selector records.
+
+  - id: email.mta_sts_present
+    title: MTA-STS policy exists
+    category: email_security
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.mta_sts]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [txt_record, policy_url, policy_status]
+    rationale: MTA-STS lets senders enforce encrypted SMTP delivery.
+    remediation: Publish _mta-sts TXT and a valid HTTPS policy.
+
+  - id: email.tls_rpt_present
+    title: TLS-RPT reporting exists
+    category: email_security
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.tls_rpt]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [tls_rpt_record]
+    rationale: TLS-RPT reports failed encrypted mail delivery attempts.
+    remediation: Publish _smtp._tls TXT with a reporting destination.
+
+  - id: email.bimi_present
+    title: BIMI record exists
+    category: email_security
+    mode: safe
+    severity: info
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [dns.bimi]
+    finding_cardinality: one
+    evidence_model: [bimi_record]
+    rationale: BIMI can improve brand display when mail authentication is strong.
+    remediation: Configure BIMI only after SPF, DKIM and DMARC enforcement are healthy.
+
+  - id: tls.certificate_present_and_valid
+    title: TLS certificate is present and valid
+    category: tls
+    mode: safe
+    severity: high
+    weight: 6
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [tls.certificate_valid]
+      tools: [testssl, internetnl]
+    finding_cardinality: one
+    evidence_model: [subject, issuer, not_after, chain_status]
+    rationale: Invalid certificates break secure browsing and train users to ignore warnings.
+    remediation: Install a trusted certificate with a complete chain.
+
+  - id: tls.certificate_expiring_soon
+    title: TLS certificate expires soon
+    category: tls
+    mode: safe
+    severity: medium
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [tls.expiry]
+      tools: [testssl]
+    finding_cardinality: one
+    evidence_model: [not_after, days_until_expiry]
+    rationale: Near-expiry certificates create outage risk.
+    remediation: Renew certificates early and monitor expiry.
+
+  - id: tls.hostname_mismatch
+    title: TLS certificate hostname mismatch
+    category: tls
+    mode: safe
+    severity: high
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [tls.hostname]
+      tools: [testssl, internetnl]
+    finding_cardinality: one
+    evidence_model: [hostname, san_names]
+    rationale: Hostname mismatch causes browser trust failures.
+    remediation: Issue a certificate that covers every served hostname.
+
+  - id: tls.chain_incomplete_or_untrusted
+    title: TLS certificate chain problem
+    category: tls
+    mode: safe
+    severity: high
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [tls.chain]
+      tools: [testssl, internetnl]
+    finding_cardinality: one
+    evidence_model: [chain_length, verification_error]
+    rationale: Incomplete or untrusted chains fail for some clients.
+    remediation: Serve the full intermediate chain from a trusted CA.
+
+  - id: tls.weak_protocol_enabled
+    title: Weak TLS protocol enabled
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [SSLv2, SSLv3, TLS1, TLS1_1]
+    finding_cardinality: many
+    evidence_model: [host, port, protocol, finding]
+    rationale: Old TLS/SSL protocol versions have known design and downgrade weaknesses.
+    remediation: Disable SSLv2, SSLv3, TLS 1.0 and TLS 1.1.
+
+  - id: tls.weak_cipher_enabled
+    title: Weak TLS cipher enabled
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_groups: [NULL, anonymous, EXPORT, LOW, 3DES, RC4, CBC]
+    finding_cardinality: many
+    evidence_model: [host, port, cipher, protocol, reason]
+    rationale: Weak ciphers can reduce confidentiality or expose protocol attacks.
+    remediation: Use modern AEAD cipher suites and remove legacy cipher support.
+
+  - id: tls.forward_secrecy_missing
+    title: Forward secrecy missing
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+    finding_cardinality: many
+    evidence_model: [host, port, cipher_suites]
+    rationale: Without forward secrecy, key compromise can expose previously captured traffic.
+    remediation: Prefer ECDHE/DHE cipher suites and modern TLS configuration.
+
+  - id: tls.known_protocol_vulnerability
+    title: Known TLS protocol vulnerability
+    category: tls
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl, nuclei, greenbone]
+      examples: [heartbleed, robot, drown, freak, logjam, sweet32, poodle, crime, breach]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, vulnerability_id, tool_rule_id, severity]
+    rationale: Known TLS vulnerabilities often have public exploit tooling.
+    remediation: Patch affected software and disable vulnerable protocol features.
+
+  - id: tls.testssl_signal_requires_review
+    title: testssl.sh signal requiring review
+    category: tls
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      dynamic_rule_ids: [testssl_json_id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, json_id, severity, finding]
+    rationale: testssl.sh emits detailed TLS, HTTP/TLS header and compatibility signals that should be retained even before each JSON ID has a more specific canonical mapping.
+    remediation: Review the testssl finding and map recurring JSON IDs to a more specific canonical TLS or HTTP check.
+
+  - id: tls.modern_protocol_supported
+    title: Modern TLS protocol support
+    category: tls
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [TLS1_2, TLS1_3, optimal_proto]
+    finding_cardinality: many
+    evidence_model: [host, port, protocol, supported]
+    rationale: Modern TLS protocol inventory helps distinguish weak legacy support from intended current support.
+    remediation: Prefer TLS 1.3 and TLS 1.2, and remove obsolete protocol versions.
+
+  - id: tls.alpn_protocols_advertised
+    title: ALPN protocols advertised
+    category: protocol_inventory
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [ALPN]
+    finding_cardinality: many
+    evidence_model: [host, port, protocols]
+    rationale: ALPN determines negotiated application protocols such as HTTP/2 and affects compatibility and attack surface.
+    remediation: Keep advertised protocols intentional and disable unsupported application protocols.
+
+  - id: tls.npn_supported
+    title: Legacy NPN protocol negotiation supported
+    category: protocol_inventory
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [NPN]
+    finding_cardinality: many
+    evidence_model: [host, port, protocols]
+    rationale: NPN is a deprecated predecessor to ALPN and can indicate legacy TLS termination.
+    remediation: Prefer ALPN and remove NPN support unless a documented legacy dependency requires it.
+
+  - id: tls.grease_compatibility
+    title: TLS GREASE compatibility
+    category: tls
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [GREASE]
+    finding_cardinality: many
+    evidence_model: [host, port, finding]
+    rationale: GREASE intolerance reveals brittle TLS implementations that may fail modern clients.
+    remediation: Update TLS libraries and termination appliances that reject GREASE values.
+
+  - id: tls.dh_group_policy
+    title: Diffie-Hellman group policy
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [DH_groups]
+    finding_cardinality: many
+    evidence_model: [host, port, group, bits, finding]
+    rationale: Weak or reused DH groups can reduce key exchange security and enable downgrade-style attacks.
+    remediation: Use modern ECDHE groups or sufficiently strong custom DHE parameters.
+
+  - id: tls.cipher_order_policy
+    title: TLS cipher order policy
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cipher_order]
+    finding_cardinality: many
+    evidence_model: [host, port, server_preference, order]
+    rationale: Server cipher preference affects whether clients negotiate the strongest mutually supported suite.
+    remediation: Prefer modern AEAD cipher suites and align cipher ordering with current platform guidance.
+
+  - id: tls.cipher_inventory
+    title: TLS cipher suite inventory
+    category: tls
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cipherlist]
+    finding_cardinality: many
+    evidence_model: [host, port, cipher, protocol, strength]
+    rationale: Full cipher inventory supports vulnerability correlation and configuration review.
+    remediation: Remove unexpected cipher suites and keep only supported modern suites.
+
+  - id: tls.rc4_enabled
+    title: RC4 cipher support enabled
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl, ssl_labs]
+      testssl_ids: [RC4]
+    finding_cardinality: many
+    evidence_model: [host, port, cipher, finding]
+    rationale: RC4 is cryptographically broken and should not be offered by public TLS services.
+    remediation: Disable RC4 cipher suites on every TLS endpoint.
+
+  - id: tls.sweet32_vulnerable
+    title: SWEET32 vulnerability signal
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl, ssl_labs]
+      testssl_ids: [SWEET32]
+    finding_cardinality: many
+    evidence_model: [host, port, cipher, finding]
+    rationale: 64-bit block ciphers such as 3DES can expose long-lived TLS sessions to SWEET32 attacks.
+    remediation: Disable 3DES and other 64-bit block ciphers.
+
+  - id: tls.poodle_vulnerable
+    title: POODLE vulnerability signal
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl, ssl_labs]
+      testssl_ids: [POODLE_SSL, POODLE_TLS]
+    finding_cardinality: many
+    evidence_model: [host, port, protocol, finding]
+    rationale: POODLE can allow plaintext recovery against vulnerable SSL/TLS configurations.
+    remediation: Disable SSLv3 and patch TLS implementations vulnerable to POODLE-style padding issues.
+
+  - id: tls.session_resumption_policy
+    title: TLS session resumption policy
+    category: tls
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [SSL_sessionID_support, sessionresumption_ID, sessionresumption_ticket]
+    finding_cardinality: many
+    evidence_model: [host, port, method, finding]
+    rationale: Session resumption affects privacy, load balancer behavior and exposure of session ticket keys.
+    remediation: Configure session resumption intentionally and rotate ticket keys where tickets are used.
+
+  - id: tls.session_ticket_policy
+    title: TLS session ticket policy
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [TLS_session_ticket]
+    finding_cardinality: many
+    evidence_model: [host, port, ticket_lifetime, finding]
+    rationale: Poorly managed TLS session tickets can weaken forward secrecy if keys are reused too long.
+    remediation: Rotate ticket keys regularly or disable tickets where key rotation cannot be guaranteed.
+
+  - id: tls.early_data_enabled
+    title: TLS 1.3 early data enabled
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [early_data]
+    finding_cardinality: many
+    evidence_model: [host, port, early_data, replay_risk]
+    rationale: TLS 1.3 0-RTT early data can be replayed unless applications handle replay-sensitive actions safely.
+    remediation: Disable early data or allow it only for idempotent requests behind replay protection.
+
+  - id: tls.fallback_scsv_supported
+    title: TLS fallback SCSV support
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [fallback_SCSV]
+    finding_cardinality: many
+    evidence_model: [host, port, supported]
+    rationale: TLS_FALLBACK_SCSV helps prevent forced downgrade attacks in legacy negotiation scenarios.
+    remediation: Enable TLS_FALLBACK_SCSV support or update TLS termination software.
+
+  - id: tls.extensions_inventory
+    title: TLS extensions inventory
+    category: protocol_inventory
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [TLS_extensions, TLS_misses_extension_23]
+    finding_cardinality: many
+    evidence_model: [host, port, extension, finding]
+    rationale: TLS extensions influence compatibility, security features and fingerprinting.
+    remediation: Review missing or unexpected extensions when compatibility or security features are affected.
+
+  - id: tls.timestamp_disclosure
+    title: TLS timestamp disclosure
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [TLS_timestamp]
+    finding_cardinality: many
+    evidence_model: [host, port, timestamp, clock_delta]
+    rationale: TLS timestamps can disclose host clock information and support fingerprinting.
+    remediation: Disable timestamp disclosure where supported or ensure host clocks are synchronized.
+
+  - id: tls.ocsp_stapling_present
+    title: OCSP stapling support
+    category: tls_certificate
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [OCSP_stapling]
+    finding_cardinality: many
+    evidence_model: [host, port, stapled, response_status]
+    rationale: OCSP stapling improves revocation checking reliability and privacy.
+    remediation: Enable OCSP stapling where supported by the certificate and TLS terminator.
+
+  - id: tls.ocsp_responder_available
+    title: OCSP responder URL available
+    category: tls_certificate
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_ocspURL]
+    finding_cardinality: many
+    evidence_model: [host, port, ocsp_url]
+    rationale: OCSP responder metadata lets clients check certificate revocation status.
+    remediation: Use certificates that include valid OCSP metadata when revocation checking is required.
+
+  - id: tls.certificate_revocation_metadata
+    title: Certificate revocation metadata
+    category: tls_certificate
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_crlDistributionPoints, intermediate_cert_badOCSP]
+    finding_cardinality: many
+    evidence_model: [host, port, crl_distribution_points, ocsp_status]
+    rationale: Revocation metadata affects how clients and scanners validate compromised or revoked certificates.
+    remediation: Use a CA and certificate profile with valid CRL and OCSP metadata.
+
+  - id: tls.certificate_transparency_scts
+    title: Certificate Transparency SCTs present
+    category: tls_certificate
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl, ssl_labs]
+      testssl_ids: [certificate_transparency]
+    finding_cardinality: many
+    evidence_model: [host, port, sct_count, delivery_method]
+    rationale: CT SCTs are required by major browsers for publicly trusted certificates.
+    remediation: Issue certificates with embedded SCTs or provide SCTs through OCSP/TLS where appropriate.
+
+  - id: tls.certificate_key_size_policy
+    title: Certificate key size policy
+    category: tls_certificate
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_keySize]
+    finding_cardinality: many
+    evidence_model: [host, port, key_algorithm, key_size]
+    rationale: Weak certificate keys undermine TLS authentication even when the chain is otherwise valid.
+    remediation: Use certificate keys that meet current CA/browser and organizational policy.
+
+  - id: tls.certificate_signature_algorithm_policy
+    title: Certificate signature algorithm policy
+    category: tls_certificate
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_signatureAlgorithm]
+    finding_cardinality: many
+    evidence_model: [host, port, signature_algorithm]
+    rationale: Weak signature algorithms can make certificate signatures untrustworthy.
+    remediation: Reissue certificates signed with modern algorithms such as SHA-256 or stronger.
+
+  - id: tls.certificate_usage_metadata
+    title: Certificate key usage metadata
+    category: tls_certificate
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_keyUsage, cert_extKeyUsage, cert_certificatePolicies_EV, cert_eTLS, cert_numbers]
+    finding_cardinality: many
+    evidence_model: [host, port, usage, policy, serial_number]
+    rationale: Certificate usage and policy metadata help detect unusual or misissued certificates.
+    remediation: Reissue certificates with the intended key usages and policy extensions.
+
+  - id: tls.certificate_authority_metadata
+    title: Certificate authority metadata
+    category: tls_certificate
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_caIssuers]
+    finding_cardinality: many
+    evidence_model: [host, port, ca_issuer_url]
+    rationale: CA issuer metadata supports chain building and certificate inventory.
+    remediation: Ensure issuer metadata is expected and points to valid CA resources.
+
+  - id: tls.certificate_must_staple
+    title: Certificate OCSP Must-Staple extension
+    category: tls_certificate
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_mustStapleExtension]
+    finding_cardinality: many
+    evidence_model: [host, port, must_staple, stapling_status]
+    rationale: Must-Staple requires reliable OCSP stapling and can create outages if stapling is misconfigured.
+    remediation: Enable robust OCSP stapling before using Must-Staple, or reissue without it.
+
+  - id: tls.certificate_compression_enabled
+    title: TLS certificate compression enabled
+    category: tls
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cert_compression, certificate_compression]
+    finding_cardinality: many
+    evidence_model: [host, port, algorithm]
+    rationale: Certificate compression is a TLS feature that affects compatibility and fingerprinting.
+    remediation: Keep certificate compression intentional and verify client compatibility.
+
+  - id: tls.client_certificate_auth_supported
+    title: TLS client certificate authentication supported
+    category: tls
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [clientAuth, clientAuth_CA_list]
+    finding_cardinality: many
+    evidence_model: [host, port, ca_list, required]
+    rationale: Client certificate authentication changes access control expectations and may expose CA trust metadata.
+    remediation: Review whether client certificate authentication is intended and restrict trusted CAs.
+
+  - id: tls.client_renegotiation_policy
+    title: TLS client renegotiation policy
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [secure_client_renego, insecure_client_renego]
+    finding_cardinality: many
+    evidence_model: [host, port, renegotiation_mode, finding]
+    rationale: Client-initiated renegotiation can create denial-of-service or protocol abuse risks when poorly controlled.
+    remediation: Disable insecure client renegotiation and keep TLS libraries patched.
+
+  - id: tls.scan_problem
+    title: TLS scan problem
+    category: tool_quality
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [scanProblem]
+    finding_cardinality: many
+    evidence_model: [host, port, problem, raw_output]
+    rationale: Scanner problems affect confidence in the TLS result and should be visible instead of silently ignored.
+    remediation: Re-run the scan, inspect connectivity and adjust timeout or protocol scope.
+
+  - id: tls.grade_summary
+    title: TLS assessment grade summary
+    category: scoring_input
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [ssl_labs]
+      ssl_labs_fields: [endpoint.grade, endpoint.gradeTrustIgnored, endpoint.hasWarnings, endpoint.isExceptional]
+    finding_cardinality: one
+    evidence_model: [host, endpoint, grade, warnings, exceptional]
+    rationale: External aggregate grades are useful context but should not replace atomic findings.
+    remediation: Use detailed endpoint findings to improve the grade.
+
+  - id: tls.compression_enabled
+    title: TLS compression enabled
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [ssl_labs]
+      ssl_labs_fields: [endpoint_details.compressionMethods]
+    finding_cardinality: many
+    evidence_model: [host, port, compression_methods]
+    rationale: TLS compression can enable CRIME-style attacks against compressed encrypted traffic.
+    remediation: Disable TLS-level compression.
+
+  - id: tls.protocol_or_extension_intolerance
+    title: TLS protocol or extension intolerance
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [ssl_labs]
+      ssl_labs_fields: [endpoint_details.protocolIntolerance, endpoint_details.miscIntolerance]
+    finding_cardinality: many
+    evidence_model: [host, port, intolerance_bits, finding]
+    rationale: Intolerance to modern protocol versions or extensions can break clients and indicate outdated TLS stacks.
+    remediation: Update TLS termination software and remove brittle middlebox behavior.
+
+  - id: tls.heartbeat_extension_supported
+    title: TLS Heartbeat extension supported
+    category: tls
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [ssl_labs]
+      ssl_labs_fields: [endpoint_details.heartbeat]
+    finding_cardinality: many
+    evidence_model: [host, port, heartbeat_supported]
+    rationale: Heartbeat support is not inherently vulnerable, but it is relevant context for Heartbleed-style exposure.
+    remediation: Keep TLS libraries patched and disable Heartbeat if it is not needed.
+
+  - id: tls.sni_required
+    title: SNI is required for TLS service
+    category: protocol_inventory
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [ssl_labs]
+      ssl_labs_fields: [endpoint_details.sniRequired]
+    finding_cardinality: many
+    evidence_model: [host, port, sni_required]
+    rationale: SNI requirements affect compatibility and how scanners must probe virtual hosts.
+    remediation: Treat as inventory signal and document expected virtual host behavior.
+
+  - id: vulnerability.debian_weak_key_signal
+    title: Debian weak key vulnerability signal
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 9
+    coverage_status: external_raw
+    implemented_by:
+      tools: [ssl_labs]
+      ssl_labs_fields: [cert.keyKnownDebianInsecure]
+    finding_cardinality: many
+    evidence_model: [host, certificate, key_fingerprint, evidence]
+    rationale: Debian weak keys are predictably generated and compromise certificate private-key security.
+    remediation: Replace affected keys and certificates immediately and investigate historical exposure.
+
+  - id: tls.score_summary
+    title: TLS score summary
+    category: scoring_input
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [final_score, overall_grade, key_exchange_score, key_exchange_score_weighted, protocol_support_score, protocol_support_score_weighted, cipher_strength_score_weighted, rating_doc, rating_spec]
+    finding_cardinality: one
+    evidence_model: [host, port, score_type, value]
+    rationale: testssl aggregate scores are useful context but should not replace atomic findings.
+    remediation: Use detailed underlying findings to improve the score.
+
+  - id: http.hpkp_header_present
+    title: HPKP header present or configured
+    category: http_headers
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [HPKP, HPKP_SPKImatch, HPKP_SPKIs, HPKP_age, HPKP_backup, HPKP_error, HPKP_notice, HPKP_preload, HPKP_subdomains]
+    finding_cardinality: many
+    evidence_model: [url, header_value, pinset, max_age, finding]
+    rationale: HPKP is deprecated and can cause site outages if misconfigured; existing headers should be inventoried.
+    remediation: Remove HPKP from public sites unless a deliberate legacy policy requires it.
+
+  - id: http.clock_skew_detected
+    title: HTTP clock skew detected
+    category: quality
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [HTTP_clock_skew, HTTP_headerTime]
+    finding_cardinality: many
+    evidence_model: [url, server_date, observed_skew]
+    rationale: Clock skew can break TLS, cache behavior and operational correlation.
+    remediation: Synchronize server clocks with reliable NTP sources.
+
+  - id: http.age_header_present
+    title: HTTP Age header present
+    category: quality
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [HTTP_headerAge]
+    finding_cardinality: many
+    evidence_model: [url, age_seconds, cache_layer]
+    rationale: Age headers reveal cache behavior and can help understand CDN/proxy paths.
+    remediation: Treat as inventory signal and verify cache behavior matches policy.
+
+  - id: http.security_headers_summary
+    title: HTTP security headers summary
+    category: http_headers
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [security_headers]
+    finding_cardinality: one
+    evidence_model: [url, headers_present, headers_missing]
+    rationale: Aggregate security header summaries help cross-check individual header findings.
+    remediation: Fix missing or weak individual security headers.
+
+  - id: http.insecure_redirect_detected
+    title: Insecure redirect detected
+    category: http_transport
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [insecure_redirect]
+    finding_cardinality: many
+    evidence_model: [url, redirect_location, transition]
+    rationale: Redirects to insecure schemes can downgrade users or leak sensitive information.
+    remediation: Redirect only to HTTPS destinations and remove insecure redirect paths.
+
+  - id: http.cookie_inventory
+    title: HTTP cookie inventory
+    category: http_headers
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cookie_count]
+    finding_cardinality: many
+    evidence_model: [url, cookie_count, cookie_names]
+    rationale: Cookie inventory is supporting context for secure, HttpOnly and SameSite cookie checks.
+    remediation: Remove unnecessary cookies and review flags on every remaining cookie.
+
+  - id: http.bigip_cookie_detected
+    title: BIG-IP persistence cookie detected
+    category: fingerprint
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [cookie_bigip_f5]
+    finding_cardinality: many
+    evidence_model: [url, cookie_name, decoded_backend]
+    rationale: BIG-IP cookies can reveal load balancer use and sometimes internal backend details.
+    remediation: Encrypt or mask persistence cookies and avoid exposing internal addresses.
+
+  - id: dns.https_record_present
+    title: DNS HTTPS/SVCB record exists
+    category: dns
+    mode: safe
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [DNS_HTTPS_rrecord]
+    finding_cardinality: one
+    evidence_model: [hostname, rrtype, record]
+    rationale: HTTPS/SVCB records influence client connection behavior, ALPN hints and endpoint discovery.
+    remediation: Publish HTTPS/SVCB records only when they match the intended service configuration.
+
+  - id: network.ip_address_disclosed_in_header
+    title: IP address disclosed in HTTP header
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 3
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [ipv4_in_header]
+    finding_cardinality: many
+    evidence_model: [url, header_name, ip_address]
+    rationale: Public headers can leak internal or backend IP addresses.
+    remediation: Strip backend IP headers at the proxy/CDN boundary.
+
+  - id: service.tls_service_detected
+    title: TLS service detected
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_ids: [service]
+    finding_cardinality: many
+    evidence_model: [host, port, service_name]
+    rationale: TLS service identification is attack-surface inventory for follow-up protocol checks.
+    remediation: Review unexpected TLS services and disable unnecessary exposure.
+
+  - id: http.https_redirect
+    title: HTTP redirects to HTTPS
+    category: http_transport
+    mode: safe
+    severity: high
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.https_redirect]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [http_url, redirect_location, status_code]
+    rationale: Plain HTTP entry points expose users to downgrade and interception.
+    remediation: Redirect all HTTP traffic to canonical HTTPS.
+
+  - id: http.hsts_present
+    title: HSTS header exists
+    category: http_headers
+    mode: safe
+    severity: high
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.hsts]
+      tools: [zap, testssl, internetnl]
+      zap_plugin_ids: ["10035"]
+    finding_cardinality: one
+    evidence_model: [strict_transport_security]
+    rationale: HSTS tells browsers to use HTTPS automatically for future visits.
+    remediation: Add Strict-Transport-Security with a suitable max-age.
+
+  - id: http.csp_missing_or_weak
+    title: Content Security Policy missing or weak
+    category: http_headers
+    mode: safe
+    severity: medium
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.csp]
+      tools: [zap, nuclei, internetnl]
+      zap_plugin_ids: ["10038", "10055"]
+    finding_cardinality: many
+    evidence_model: [url, content_security_policy, weakness]
+    rationale: CSP reduces XSS impact and constrains untrusted script/content sources.
+    remediation: Add a CSP with default-src and remove unnecessarily broad directives.
+
+  - id: http.x_content_type_options_missing
+    title: X-Content-Type-Options missing
+    category: http_headers
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.x_content_type_options]
+      tools: [zap, internetnl]
+      zap_plugin_ids: ["10021"]
+    finding_cardinality: many
+    evidence_model: [url, header_value]
+    rationale: nosniff prevents browsers from interpreting content as a different MIME type.
+    remediation: "Add X-Content-Type-Options: nosniff."
+
+  - id: http.referrer_policy_missing
+    title: Referrer-Policy missing
+    category: http_headers
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.referrer_policy]
+      tools: [internetnl]
+    finding_cardinality: many
+    evidence_model: [url, header_value]
+    rationale: Referrer-Policy limits leakage of URLs and query strings to third parties.
+    remediation: Add a strict enough Referrer-Policy for the application.
+
+  - id: http.permissions_policy_missing_or_weak
+    title: Permissions-Policy missing or weak
+    category: http_headers
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.permissions_policy]
+      tools: [internetnl]
+    finding_cardinality: many
+    evidence_model: [url, header_value]
+    rationale: Permissions-Policy limits access to browser features such as camera or geolocation.
+    remediation: Add a least-privilege Permissions-Policy.
+
+  - id: http.frame_protection_missing
+    title: Clickjacking protection missing
+    category: http_headers
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.frame_protection]
+      tools: [zap]
+      zap_plugin_ids: ["10020"]
+    finding_cardinality: many
+    evidence_model: [url, x_frame_options, csp_frame_ancestors]
+    rationale: Missing frame protection can allow clickjacking attacks.
+    remediation: Use CSP frame-ancestors and/or X-Frame-Options where appropriate.
+
+  - id: http.cors_too_permissive
+    title: CORS policy too permissive
+    category: web_appsec
+    mode: safe
+    severity: medium
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.cors]
+      tools: [zap, nuclei]
+      zap_plugin_ids: ["10098"]
+    finding_cardinality: many
+    evidence_model: [url, access_control_allow_origin, credentials]
+    rationale: Overly broad CORS can expose API data to untrusted origins.
+    remediation: Restrict CORS to trusted origins and avoid credentials with wildcard origins.
+
+  - id: http.cookie_missing_secure
+    title: Cookie missing Secure flag
+    category: web_appsec
+    mode: safe
+    severity: medium
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.cookie_flags]
+      tools: [zap]
+      zap_plugin_ids: ["10011"]
+    finding_cardinality: many
+    evidence_model: [url, cookie_name, flags]
+    rationale: Cookies without Secure can be sent over plain HTTP.
+    remediation: Add Secure to session and sensitive cookies.
+
+  - id: http.cookie_missing_httponly
+    title: Cookie missing HttpOnly flag
+    category: web_appsec
+    mode: safe
+    severity: medium
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.cookie_flags]
+      tools: [zap]
+      zap_plugin_ids: ["10010"]
+    finding_cardinality: many
+    evidence_model: [url, cookie_name, flags]
+    rationale: Cookies without HttpOnly can be read by injected JavaScript.
+    remediation: Add HttpOnly to session and sensitive cookies.
+
+  - id: http.cookie_missing_samesite
+    title: Cookie missing SameSite attribute
+    category: web_appsec
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: partial
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10054"]
+    finding_cardinality: many
+    evidence_model: [url, cookie_name, flags]
+    rationale: SameSite reduces CSRF-style cross-site cookie sending.
+    remediation: Add SameSite=Lax or Strict where compatible.
+
+  - id: http.server_header_disclosure
+    title: HTTP Server header discloses product or version
+    category: fingerprint
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.server_leakage]
+      tools: [zap, httpx]
+      zap_plugin_ids: ["10036"]
+    finding_cardinality: many
+    evidence_model: [url, server_header]
+    rationale: Server banners help attackers select targeted exploits.
+    remediation: Remove version details or minimize product disclosure.
+
+  - id: http.powered_by_header_disclosure
+    title: X-Powered-By or framework header disclosure
+    category: fingerprint
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: partial
+    implemented_by:
+      tools: [zap, httpx]
+      zap_plugin_ids: ["10037", "10061"]
+    finding_cardinality: many
+    evidence_model: [url, header_name, header_value]
+    rationale: Framework headers disclose implementation details and often versions.
+    remediation: Remove unnecessary framework and version headers.
+
+  - id: http.coop_coep_corp_missing_or_weak
+    title: Cross-origin isolation headers missing or weak
+    category: http_headers
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [http.coop_coep_corp]
+    finding_cardinality: many
+    evidence_model: [url, coop, coep, corp]
+    rationale: COOP/COEP/CORP reduce cross-origin data leakage and isolation issues.
+    remediation: Add appropriate cross-origin isolation headers where application behavior allows.
+
+  - id: web.mixed_content
+    title: Mixed active or passive content
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [aggressive.mixed_content]
+      tools: [zap]
+      zap_plugin_ids: ["10040"]
+    finding_cardinality: many
+    evidence_model: [page_url, resource_url, resource_type]
+    rationale: HTTP resources on HTTPS pages can be modified or blocked by browsers.
+    remediation: Load all subresources over HTTPS.
+
+  - id: web.broken_links
+    title: Broken internal or external links
+    category: quality
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [aggressive.broken_links]
+    finding_cardinality: many
+    evidence_model: [source_url, target_url, status_code]
+    rationale: Broken links reduce trust, crawlability and user experience.
+    remediation: Fix or remove broken links.
+
+  - id: web.sensitive_path_exposed
+    title: Sensitive common path exposed
+    category: exposure
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [aggressive.sensitive_paths]
+      tools: [nuclei, zap]
+    finding_cardinality: many
+    evidence_model: [url, status_code, path_type]
+    rationale: Exposed env files, backups, admin paths or source maps can leak secrets or internals.
+    remediation: Remove exposed files, block access and rotate leaked secrets.
+
+  - id: web.source_map_exposed
+    title: JavaScript source map exposed
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: partial
+    implemented_by:
+      internal_check_ids: [aggressive.exposed_tokens]
+      tools: [nuclei, zap]
+    finding_cardinality: many
+    evidence_model: [url, source_map_url]
+    rationale: Source maps can expose source code, routes and implementation details.
+    remediation: Do not publish production source maps unless intentionally public.
+
+  - id: web.public_secret_or_token_hint
+    title: Public token or secret hint
+    category: exposure
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [aggressive.exposed_tokens]
+      tools: [nuclei]
+    finding_cardinality: many
+    evidence_model: [url, token_type, matched_context]
+    rationale: Public secrets can lead directly to account or infrastructure compromise.
+    remediation: Remove the secret, rotate it immediately and audit access logs.
+
+  - id: web.subresource_integrity_missing
+    title: External subresource integrity missing
+    category: web_appsec
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90003"]
+    finding_cardinality: many
+    evidence_model: [page_url, resource_url, tag]
+    rationale: SRI helps detect tampering of externally hosted scripts and styles.
+    remediation: Add integrity attributes for stable third-party assets.
+
+  - id: web.vulnerable_javascript_library
+    title: Vulnerable JavaScript library detected
+    category: vulnerability
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei]
+      zap_plugin_ids: ["10003"]
+    finding_cardinality: many
+    evidence_model: [url, library, version, vulnerability_reference]
+    rationale: Old client-side libraries frequently contain public XSS or supply-chain issues.
+    remediation: Upgrade the library or remove unused dependencies.
+
+  - id: web.application_error_disclosure
+    title: Application error disclosure
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei]
+      zap_plugin_ids: ["10023", "90022"]
+    finding_cardinality: many
+    evidence_model: [url, error_type, evidence_excerpt]
+    rationale: Error messages can leak code paths, SQL details, stack traces or framework versions.
+    remediation: Disable debug output and return generic production error pages.
+
+  - id: web.private_ip_disclosure
+    title: Private IP address disclosed
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["2"]
+    finding_cardinality: many
+    evidence_model: [url, private_ip, context]
+    rationale: Private addresses reveal internal topology and deployment details.
+    remediation: Remove internal addresses from public responses and comments.
+
+  - id: web.session_id_in_url
+    title: Session identifier appears in URL
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["3"]
+    finding_cardinality: many
+    evidence_model: [url, parameter_name]
+    rationale: Session IDs in URLs leak through logs, browser history and referrers.
+    remediation: Store session identifiers only in secure cookies.
+
+  - id: web.csrf_protection_missing_signal
+    title: Missing anti-CSRF token signal
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10202"]
+    finding_cardinality: many
+    evidence_model: [url, form_or_endpoint]
+    rationale: State-changing actions without CSRF mitigation can be abused from other origins.
+    remediation: Add CSRF tokens or equivalent same-site protections for state-changing requests.
+
+  - id: web.cross_site_scripting_signal
+    title: Cross-site scripting signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei]
+      dynamic_rule_ids: [zap_plugin_id, nuclei_template_id]
+    finding_cardinality: many
+    evidence_model: [url, parameter, sink, evidence]
+    rationale: XSS can allow attackers to execute script in a user's browser, steal session data or perform actions as the user.
+    remediation: Validate and encode untrusted input, avoid dangerous DOM sinks and enforce a strict CSP as defense in depth.
+
+  - id: web.zap_passive_or_active_alert
+    title: OWASP ZAP alert requiring classification
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 3
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      dynamic_rule_ids: [zap_plugin_id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, plugin_id, alert_name, risk, confidence]
+    rationale: ZAP contains many passive and active rules; unmapped plugin IDs should still be preserved for triage rather than discarded.
+    remediation: Review the ZAP alert, confirm exploitability and map the plugin ID to a more specific canonical check when possible.
+
+  - id: web.directory_browsing_enabled
+    title: Directory browsing enabled
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["0", "10033"]
+    finding_cardinality: many
+    evidence_model: [url, directory_listing_evidence]
+    rationale: Directory listings can expose source files, backups, uploads or deployment artifacts.
+    remediation: Disable directory indexing and remove unintended public files.
+
+  - id: web.path_traversal_signal
+    title: Path traversal signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["6"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: Path traversal can expose files outside the intended web root.
+    remediation: Normalize paths server-side, deny traversal sequences and enforce allowlisted file access.
+
+  - id: web.remote_file_include_signal
+    title: Remote file include signal
+    category: web_appsec
+    mode: aggressive
+    severity: critical
+    weight: 9
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["7"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: Remote file inclusion can lead to server-side code execution or data exfiltration.
+    remediation: Disable remote includes, validate file parameters and never include untrusted URLs.
+
+  - id: web.cookie_poisoning_signal
+    title: Cookie poisoning signal
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10029"]
+    finding_cardinality: many
+    evidence_model: [url, cookie_name, evidence]
+    rationale: Trusting mutable client-side cookie values can allow privilege, routing or state manipulation.
+    remediation: Sign or encrypt security-sensitive cookies and validate all client-controlled state server-side.
+
+  - id: web.viewstate_insecure
+    title: Insecure ViewState signal
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10032", "90001"]
+    finding_cardinality: many
+    evidence_model: [url, viewstate_evidence]
+    rationale: Weak ViewState configuration can expose application state or enable tampering in affected ASP.NET applications.
+    remediation: Enable ViewState MAC/encryption where required and avoid storing sensitive data in client-side state.
+
+  - id: vulnerability.heartbleed_signal
+    title: Heartbleed vulnerability signal
+    category: tls
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, testssl]
+      zap_plugin_ids: ["10034", "20015"]
+      cves: [CVE-2014-0160]
+    finding_cardinality: many
+    evidence_model: [host, port, evidence]
+    rationale: Heartbleed can disclose process memory from vulnerable OpenSSL services.
+    remediation: Patch OpenSSL, rotate affected private keys and retest all exposed TLS services.
+
+  - id: http.insecure_form_transition
+    title: Insecure HTTP/HTTPS form transition
+    category: http_security
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10041", "10042"]
+    finding_cardinality: many
+    evidence_model: [page_url, form_action, transition]
+    rationale: Forms crossing between HTTP and HTTPS can expose submitted data or weaken user trust.
+    remediation: Serve forms and form actions only over HTTPS and redirect HTTP traffic before form rendering.
+
+  - id: web.source_code_disclosure
+    title: Source code disclosure signal
+    category: exposure
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10045", "20017"]
+    finding_cardinality: many
+    evidence_model: [url, technology, evidence]
+    rationale: Public source code can expose credentials, logic, internal paths and exploitable weaknesses.
+    remediation: Block access to source directories, remove deployed source artifacts and rotate exposed secrets.
+
+  - id: web.insecure_http_available
+    title: HTTPS content available over HTTP
+    category: http_security
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10047", "10106"]
+    finding_cardinality: many
+    evidence_model: [url, http_url, https_url]
+    rationale: Serving the same content over HTTP enables interception and downgrade risk.
+    remediation: Redirect all HTTP requests to HTTPS and enable HSTS after validation.
+
+  - id: vulnerability.shellshock_signal
+    title: ShellShock vulnerability signal
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10048"]
+      cves: [CVE-2014-6271]
+    finding_cardinality: many
+    evidence_model: [url, parameter_or_header, evidence]
+    rationale: ShellShock can allow command execution through vulnerable CGI or Bash-backed request handling.
+    remediation: Patch Bash and affected CGI stacks, remove vulnerable handlers and retest exposed endpoints.
+
+  - id: web.cached_response_observable
+    title: Cached response observable
+    category: privacy
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10050"]
+    finding_cardinality: many
+    evidence_model: [url, cache_header, evidence]
+    rationale: Cached dynamic responses can leak user-specific or sensitive content through intermediaries or local caches.
+    remediation: Mark sensitive responses private or no-store and separate static cache policies from dynamic content.
+
+  - id: web.header_information_leak
+    title: Non-standard response header information leak
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10039", "10052", "10061"]
+    finding_cardinality: many
+    evidence_model: [url, header_name, header_value]
+    rationale: Non-standard diagnostic or platform headers can expose backend topology and framework versions.
+    remediation: Remove unnecessary diagnostic headers at the application, proxy or CDN layer.
+
+  - id: privacy.pii_disclosure_signal
+    title: PII disclosure signal
+    category: privacy
+    mode: aggressive
+    severity: medium
+    weight: 6
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10062"]
+    finding_cardinality: many
+    evidence_model: [url, pii_type, evidence]
+    rationale: Publicly exposed personally identifiable information creates privacy, legal and trust risk.
+    remediation: Remove unintended PII, restrict access and review logs or caches that may have retained it.
+
+  - id: auth.insecure_authentication_signal
+    title: Insecure authentication signal
+    category: identity
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10105"]
+    finding_cardinality: many
+    evidence_model: [url, auth_scheme, evidence]
+    rationale: Weak authentication transport or flow design can expose credentials and sessions.
+    remediation: Enforce HTTPS, modern authentication flows, secure cookies and MFA where appropriate.
+
+  - id: web.modern_app_detected
+    title: Modern JavaScript application detected
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10109"]
+    finding_cardinality: many
+    evidence_model: [url, framework_or_signal]
+    rationale: Client-rendered applications can hide routes and API calls from simple crawlers.
+    remediation: Include client-side routes and APIs in application security testing scope.
+
+  - id: inventory.tool_version_outdated
+    title: External scanner version is outdated
+    category: inventory
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10116"]
+    finding_cardinality: one
+    evidence_model: [tool, installed_version, latest_version]
+    rationale: Outdated scanner versions can miss checks or produce stale rule metadata.
+    remediation: Rebuild the tools image and refresh bundled scanner rules.
+
+  - id: web.get_for_post_signal
+    title: GET used where POST is expected
+    category: web_appsec
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10058"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, evidence]
+    rationale: State-changing or sensitive actions over GET can leak data and weaken CSRF protections.
+    remediation: Use POST or another appropriate method for state-changing actions and avoid sensitive URL parameters.
+
+  - id: web.external_redirect_signal
+    title: External redirect signal
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["20019"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, redirect_location]
+    rationale: User-controllable external redirects can support phishing and token leakage.
+    remediation: Use strict redirect allowlists and avoid reflecting arbitrary destination URLs.
+
+  - id: web.buffer_overflow_signal
+    title: Buffer overflow signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["30001"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: Buffer overflow behavior can indicate memory corruption in native components or gateways.
+    remediation: Patch affected software, validate inputs and add memory-safe request handling where possible.
+
+  - id: web.format_string_error_signal
+    title: Format string error signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["30002"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: Format string handling bugs can leak memory or allow code execution in vulnerable native code.
+    remediation: Patch affected software and ensure untrusted input is never used as a format string.
+
+  - id: web.crlf_injection_signal
+    title: CRLF injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["40003"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: CRLF injection can enable response splitting, header injection or cache poisoning.
+    remediation: Reject CRLF characters in header-influencing inputs and use framework-safe header APIs.
+
+  - id: web.parameter_tampering_signal
+    title: Parameter tampering signal
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["40008"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: Parameter tampering can bypass business rules or authorization assumptions.
+    remediation: Enforce server-side validation and authorization for all parameters.
+
+  - id: web.server_side_include_signal
+    title: Server-side include injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["40009"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: SSI injection can expose files or execute server-side directives.
+    remediation: Disable SSI where unnecessary and encode untrusted input before template inclusion.
+
+  - id: web.sql_injection_signal
+    title: SQL injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["40018", "40019", "40020", "40021", "40022", "40024", "40027"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, dbms, payload, evidence]
+    rationale: SQL injection can expose or modify application data and often leads to full compromise.
+    remediation: Use parameterized queries, avoid dynamic SQL and add input validation plus least-privilege database accounts.
+
+  - id: web.sensitive_file_disclosure
+    title: Sensitive file disclosure
+    category: exposure
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei]
+      zap_plugin_ids: ["40028", "40029", "40032", "40034", "40035", "40042"]
+    finding_cardinality: many
+    evidence_model: [url, file_or_path, evidence]
+    rationale: Public diagnostic files, hidden files and framework endpoints often disclose secrets or operational data.
+    remediation: Remove exposed files, restrict administrative endpoints and rotate any disclosed credentials.
+
+  - id: vulnerability.log4shell_signal
+    title: Log4Shell vulnerability signal
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei, greenbone]
+      zap_plugin_ids: ["40043"]
+      cves: [CVE-2021-44228, CVE-2021-45046]
+    finding_cardinality: many
+    evidence_model: [url, payload, evidence]
+    rationale: Log4Shell can allow remote code execution in vulnerable Java logging stacks.
+    remediation: Patch Log4j and dependent applications, remove vulnerable classes and review exposure logs.
+
+  - id: web.xml_entity_expansion_signal
+    title: XML entity expansion signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["40044"]
+    finding_cardinality: many
+    evidence_model: [url, parser, payload, evidence]
+    rationale: XML entity expansion can exhaust resources or expose parser weaknesses.
+    remediation: Disable DTDs and external entities in XML parsers and apply parser limits.
+
+  - id: vulnerability.spring4shell_signal
+    title: Spring4Shell vulnerability signal
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei, greenbone]
+      zap_plugin_ids: ["40045"]
+      cves: [CVE-2022-22965]
+    finding_cardinality: many
+    evidence_model: [url, payload, evidence]
+    rationale: Spring4Shell can allow remote code execution in vulnerable Spring applications.
+    remediation: Patch Spring Framework and application servers, and restrict vulnerable request binding patterns.
+
+  - id: vulnerability.remote_code_execution_signal
+    title: Remote code execution signal
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei, greenbone]
+      zap_plugin_ids: ["20018", "40048"]
+    finding_cardinality: many
+    evidence_model: [url, vulnerability_name, payload, evidence]
+    rationale: Remote code execution findings represent direct compromise risk.
+    remediation: Patch affected software immediately, isolate impacted services and investigate exploitation evidence.
+
+  - id: web.charset_mismatch
+    title: Charset mismatch signal
+    category: web_appsec
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90011"]
+    finding_cardinality: many
+    evidence_model: [url, declared_charset, observed_charset]
+    rationale: Charset ambiguity can undermine output encoding assumptions.
+    remediation: Emit a single consistent charset in headers and HTML metadata.
+
+  - id: web.java_serialization_signal
+    title: Java serialization object signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90002"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, evidence]
+    rationale: Exposed Java serialized objects can lead to deserialization attacks when processed unsafely.
+    remediation: Avoid native Java serialization for untrusted data and enforce signed, typed payloads.
+
+  - id: web.xslt_injection_signal
+    title: XSLT injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90017"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: XSLT injection can expose files or execute functionality exposed by the XSLT engine.
+    remediation: Do not compile untrusted XSLT and sandbox transformation features.
+
+  - id: web.code_injection_signal
+    title: Code injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90019"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: Code injection can execute attacker-controlled instructions in the application context.
+    remediation: Remove dynamic evaluation of untrusted input and enforce strict allowlisted operations.
+
+  - id: web.os_command_injection_signal
+    title: OS command injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90020", "90037"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: OS command injection can give attackers command execution on the host.
+    remediation: Avoid shell execution with untrusted data and use safe APIs with strict allowlists.
+
+  - id: web.xpath_injection_signal
+    title: XPath injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90021"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: XPath injection can disclose XML-backed data or bypass application logic.
+    remediation: Use parameterized XPath APIs or strict allowlisted query construction.
+
+  - id: web.xxe_signal
+    title: XML external entity signal
+    category: web_appsec
+    mode: aggressive
+    severity: critical
+    weight: 9
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90023"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, payload, evidence]
+    rationale: XXE can disclose local files, trigger SSRF or disrupt services.
+    remediation: Disable external entity resolution and DTD processing in XML parsers.
+
+  - id: web.padding_oracle_signal
+    title: Padding oracle signal
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 8
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90024"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, evidence]
+    rationale: Padding oracles can allow ciphertext decryption or token forgery in vulnerable schemes.
+    remediation: Use authenticated encryption and patch affected cryptographic libraries or frameworks.
+
+  - id: web.cookie_loose_scope
+    title: Cookie scope is too broad
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90033"]
+    finding_cardinality: many
+    evidence_model: [url, cookie_name, domain, path]
+    rationale: Broad cookie scope can expose cookies to more hosts or paths than intended.
+    remediation: Restrict cookie Domain and Path attributes to the narrowest required scope.
+
+  - id: web.cloud_metadata_exposure_signal
+    title: Cloud metadata exposure signal
+    category: cloud
+    mode: aggressive
+    severity: critical
+    weight: 9
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei]
+      zap_plugin_ids: ["90034"]
+    finding_cardinality: many
+    evidence_model: [url, cloud_provider, evidence]
+    rationale: Metadata service exposure can leak cloud credentials or instance identity data.
+    remediation: Block metadata access from public request paths and enforce cloud metadata protections such as IMDSv2.
+
+  - id: web.server_side_template_injection_signal
+    title: Server-side template injection signal
+    category: web_appsec
+    mode: aggressive
+    severity: critical
+    weight: 10
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["90035", "90036"]
+    finding_cardinality: many
+    evidence_model: [url, parameter, template_engine, payload, evidence]
+    rationale: SSTI can expose data or execute code depending on the template engine.
+    remediation: Never render untrusted input as templates and sandbox template execution.
+
+  - id: web.browser_storage_sensitive_disclosure
+    title: Sensitive data in browser storage
+    category: privacy
+    mode: aggressive
+    severity: medium
+    weight: 6
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["120000", "120001", "120002"]
+    finding_cardinality: many
+    evidence_model: [url, storage_type, key, evidence]
+    rationale: Browser storage persists data that scripts and local users may access after the session.
+    remediation: Avoid storing sensitive tokens or PII in local/session storage and use short-lived secure cookies when appropriate.
+
+  - id: web.content_type_missing
+    title: Content-Type header missing
+    category: http_headers
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10019"]
+    finding_cardinality: many
+    evidence_model: [url, response_type, evidence]
+    rationale: Missing Content-Type can cause clients or intermediaries to guess content handling incorrectly.
+    remediation: Send an explicit and correct Content-Type for every response.
+
+  - id: web.large_redirect_sensitive_leak_signal
+    title: Large redirect sensitive information leak signal
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10044"]
+    finding_cardinality: many
+    evidence_model: [url, redirect_location, size, evidence]
+    rationale: Large redirect targets can carry sensitive parameters or application state through logs and referrers.
+    remediation: Keep redirects small, avoid sensitive URL parameters and store state server-side.
+
+  - id: web.user_agent_behavior_variation
+    title: User-Agent dependent behavior signal
+    category: fingerprint
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10104"]
+    finding_cardinality: many
+    evidence_model: [url, user_agent, response_difference]
+    rationale: User-Agent dependent behavior can hide alternate code paths and scanner-specific responses.
+    remediation: Review intentional device/browser branching and remove security-sensitive differences.
+
+  - id: web.reverse_tabnabbing
+    title: Reverse tabnabbing risk
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10108"]
+    finding_cardinality: many
+    evidence_model: [page_url, target_url]
+    rationale: New-tab links without noopener can let the target control the opener page.
+    remediation: Add rel=noopener noreferrer to untrusted target=_blank links.
+
+  - id: web.csp_unsafe_inline_or_eval
+    title: CSP allows unsafe inline or eval
+    category: http_headers
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap, nuclei]
+      zap_plugin_ids: ["10055"]
+    finding_cardinality: many
+    evidence_model: [url, directive, value]
+    rationale: unsafe-inline and unsafe-eval weaken CSP protection against XSS.
+    remediation: Replace unsafe directives with nonces, hashes or stricter script policies.
+
+  - id: vulnerability.known_cve_detected
+    title: Known CVE detected
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: partial
+    implemented_by:
+      tools: [nuclei, greenbone, shodan_internetdb]
+      dynamic_rule_ids: [CVE_ID, nuclei_template_id, greenbone_nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, cve, product, version, rule_id, cvss, severity]
+    rationale: Known CVEs are high-value attacker targeting signals.
+    remediation: Patch, backport, mitigate or decommission the affected component.
+
+  - id: vulnerability.nuclei_template_match
+    title: Nuclei template condition matched
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: external_raw
+    implemented_by:
+      tools: [nuclei]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, template_id, template_name, severity, matcher, tags]
+    rationale: A Nuclei template represents a stable externally maintained condition.
+    remediation: Follow template metadata, vendor guidance and evidence-specific remediation.
+
+  - id: vulnerability.greenbone_nvt_match
+    title: Greenbone NVT condition matched
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, nvt_oid, nvt_name, cvss, qod, cves]
+    rationale: Greenbone NVTs represent network vulnerability checks from a maintained feed.
+    remediation: Follow Greenbone result guidance and vendor patches.
+
+  - id: vulnerability.cms_or_framework_outdated
+    title: CMS or framework appears outdated
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: partial
+    implemented_by:
+      internal_check_ids: [aggressive.cve_hints]
+      tools: [nuclei, httpx, zap, greenbone]
+    finding_cardinality: many
+    evidence_model: [url, product, detected_version, latest_safe_version, evidence]
+    rationale: Outdated public frameworks are frequently targeted by automated attacks.
+    remediation: Upgrade or apply vendor-supported security backports.
+
+  - id: takeover.dangling_dns_or_saas
+    title: Dangling DNS or SaaS takeover signal
+    category: takeover
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: partial
+    implemented_by:
+      internal_check_ids: [aggressive.takeover_heuristics]
+      tools: [nuclei, subfinder, amass]
+    finding_cardinality: many
+    evidence_model: [hostname, cname, provider, takeover_signal]
+    rationale: Dangling DNS records can allow attackers to claim a subdomain.
+    remediation: Remove stale records or claim/configure the referenced provider resource.
+
+  - id: inventory.subdomains
+    title: Subdomain inventory
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_results: [tools.subdomain_inventory]
+      tools: [subfinder, amass, certificate_transparency]
+    finding_cardinality: many
+    evidence_model: [hostname, source]
+    rationale: Subdomains are the unit of public attack surface expansion.
+    remediation: Review discovered subdomains for ownership, purpose and exposure.
+
+  - id: inventory.http_services
+    title: HTTP service inventory
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_results: [tools.http_probe_inventory]
+      tools: [httpx]
+    finding_cardinality: many
+    evidence_model: [url, status_code, title, technologies, webserver]
+    rationale: Live HTTP services determine where web checks and vulnerabilities apply.
+    remediation: Review live services and decommission or restrict unexpected hosts.
+
+  - id: inventory.certificate_transparency_names
+    title: Certificate Transparency names inventory
+    category: transparency
+    mode: safe
+    severity: info
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [transparency.ct_names]
+      tools: [subfinder, amass]
+    finding_cardinality: many
+    evidence_model: [hostname, certificate_log_source]
+    rationale: CT logs reveal hostnames that may still be publicly reachable or forgotten.
+    remediation: Review discovered names and remove unused DNS/service exposure.
+
+  - id: reputation.spamhaus_dbl_listed
+    title: Domain listed in Spamhaus DBL
+    category: reputation
+    mode: safe
+    severity: high
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [reputation.spamhaus_dbl]
+    finding_cardinality: one
+    evidence_model: [listed, categories]
+    rationale: DBL listing indicates abuse, compromise or reputation damage.
+    remediation: Investigate abuse, clean the site/mail flow and follow delisting process.
+
+  - id: reputation.surbl_listed
+    title: Domain listed in SURBL
+    category: reputation
+    mode: safe
+    severity: high
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [reputation.surbl]
+    finding_cardinality: one
+    evidence_model: [listed, categories]
+    rationale: SURBL listing can affect mail deliverability and indicates suspicious URLs.
+    remediation: Investigate compromise or abuse and request delisting after cleanup.
+
+  - id: reputation.urlhaus_listed
+    title: Domain listed in URLhaus
+    category: reputation
+    mode: safe
+    severity: high
+    weight: 4
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [reputation.urlhaus]
+    finding_cardinality: one
+    evidence_model: [listed, urlhaus_url]
+    rationale: URLhaus listing suggests malware distribution or compromised pages.
+    remediation: Remove malware, patch root cause and request review.
+
+  - id: reputation.virustotal_domain_signal
+    title: VirusTotal domain reputation signal
+    category: reputation
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: partial
+    implemented_by:
+      internal_check_ids: [reputation.virustotal]
+      api_key_required: true
+    finding_cardinality: one
+    evidence_model: [malicious_count, suspicious_count, scan_url]
+    rationale: Multi-engine reputation adds strong external context when API access is configured.
+    remediation: Investigate detections and coordinate cleanup/delisting.
+
+  - id: transparency.security_txt_present
+    title: security.txt exists
+    category: transparency
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [transparency.security_txt]
+    finding_cardinality: one
+    evidence_model: [url, status_code, contacts]
+    rationale: security.txt gives researchers a clear vulnerability reporting channel.
+    remediation: Publish /.well-known/security.txt with contact and policy fields.
+
+  - id: transparency.privacy_page_discoverable
+    title: Privacy page discoverable
+    category: transparency
+    mode: safe
+    severity: low
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [transparency.privacy_terms]
+    finding_cardinality: one
+    evidence_model: [privacy_url]
+    rationale: Public privacy information is expected for most public websites.
+    remediation: Publish and link a privacy policy.
+
+  - id: transparency.terms_page_discoverable
+    title: Terms page discoverable
+    category: transparency
+    mode: safe
+    severity: low
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [transparency.privacy_terms]
+    finding_cardinality: one
+    evidence_model: [terms_url]
+    rationale: Terms clarify service use and legal expectations.
+    remediation: Publish and link terms where applicable.
+
+  - id: transparency.rdap_registration_available
+    title: RDAP registration metadata available
+    category: transparency
+    mode: safe
+    severity: info
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [transparency.rdap]
+    finding_cardinality: one
+    evidence_model: [registrar, events, expiry]
+    rationale: RDAP provides public registration context and expiry hints.
+    remediation: Keep registrar data accurate and monitor expiry.
+
+  - id: seo.http_success_status
+    title: Main page returns successful status
+    category: seo
+    mode: safe
+    severity: medium
+    weight: 5
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.status]
+      tools: [httpx]
+    finding_cardinality: one
+    evidence_model: [url, status_code]
+    rationale: Search engines and users need a successful canonical page response.
+    remediation: Fix errors, redirect loops and blocked canonical URLs.
+
+  - id: seo.title_present
+    title: HTML title exists
+    category: seo
+    mode: safe
+    severity: low
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.title]
+    finding_cardinality: one
+    evidence_model: [title]
+    rationale: Title is a core search and browser signal.
+    remediation: Add a concise unique title.
+
+  - id: seo.meta_description_present
+    title: Meta description exists
+    category: seo
+    mode: safe
+    severity: low
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.meta_description]
+    finding_cardinality: one
+    evidence_model: [description]
+    rationale: Meta description influences search snippets and content clarity.
+    remediation: Add a useful page description.
+
+  - id: seo.canonical_present
+    title: Canonical link exists
+    category: seo
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.canonical]
+    finding_cardinality: one
+    evidence_model: [canonical_url]
+    rationale: Canonical URLs reduce duplicate-content ambiguity.
+    remediation: Add a correct canonical link.
+
+  - id: seo.robots_txt_present
+    title: robots.txt exists
+    category: seo
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.robots]
+    finding_cardinality: one
+    evidence_model: [robots_url, status_code]
+    rationale: robots.txt communicates crawler policy.
+    remediation: Publish robots.txt when crawler policy matters.
+
+  - id: seo.sitemap_present
+    title: sitemap.xml exists
+    category: seo
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.sitemap]
+    finding_cardinality: one
+    evidence_model: [sitemap_url, status_code]
+    rationale: Sitemaps help crawlers discover canonical URLs.
+    remediation: Publish and reference a sitemap.
+
+  - id: seo.headings_structure_present
+    title: Heading structure present
+    category: seo
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.headings]
+    finding_cardinality: one
+    evidence_model: [h1_count, headings]
+    rationale: Headings help users, accessibility tools and crawlers understand the page.
+    remediation: Use a clear H1 and semantic heading hierarchy.
+
+  - id: seo.structured_data_present
+    title: Structured data exists
+    category: seo
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [seo.json_ld]
+    finding_cardinality: many
+    evidence_model: [json_ld_count, types]
+    rationale: Structured data helps machines interpret page entities and content.
+    remediation: Add valid schema.org JSON-LD for relevant page types.
+
+  - id: ai.llms_txt_present
+    title: llms.txt exists
+    category: ai_optimization
+    mode: safe
+    severity: low
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [ai.llms_txt]
+    finding_cardinality: one
+    evidence_model: [url, status_code]
+    rationale: llms.txt can provide model-friendly guidance and curated resources.
+    remediation: Publish llms.txt with stable, high-quality links and summaries.
+
+  - id: ai.robots_ai_crawler_policy
+    title: AI crawler policy is declared
+    category: ai_optimization
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [ai.robots_ai]
+    finding_cardinality: one
+    evidence_model: [robots_rules, known_ai_user_agents]
+    rationale: Explicit policy clarifies whether AI crawlers may access content.
+    remediation: Add clear robots.txt rules for known AI crawlers according to policy.
+
+  - id: ai.extractable_text_available
+    title: Clean extractable text exists
+    category: ai_optimization
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [ai.extractable_text]
+    finding_cardinality: one
+    evidence_model: [text_length, ratio]
+    rationale: Models and search systems need accessible text, not only rendered or image content.
+    remediation: Provide semantic HTML text for important content.
+
+  - id: ai.docs_or_faq_signal
+    title: Documentation or FAQ signal exists
+    category: ai_optimization
+    mode: safe
+    severity: low
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [ai.docs_faq]
+    finding_cardinality: one
+    evidence_model: [links, structured_data_types]
+    rationale: FAQ and documentation pages help answer extraction and model summarization.
+    remediation: Publish clear documentation, FAQ or support pages.
+
+  - id: performance.ttfb_reasonable
+    title: Time to first byte is reasonable
+    category: performance
+    mode: safe
+    severity: low
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [perf.ttfb]
+    finding_cardinality: one
+    evidence_model: [ttfb_ms]
+    rationale: Slow TTFB hurts user experience and crawl efficiency.
+    remediation: Optimize hosting, caching, backend latency and edge delivery.
+
+  - id: performance.html_size_reasonable
+    title: HTML size is reasonable
+    category: performance
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [perf.html_size]
+    finding_cardinality: one
+    evidence_model: [body_size]
+    rationale: Large HTML documents slow first render and parsing.
+    remediation: Remove unnecessary markup and inline payloads.
+
+  - id: performance.compression_enabled
+    title: HTTP compression enabled
+    category: performance
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [perf.compression]
+    finding_cardinality: one
+    evidence_model: [content_encoding]
+    rationale: Compression reduces transfer size for text resources.
+    remediation: Enable gzip, brotli or zstd for compressible content.
+
+  - id: performance.cache_headers_present
+    title: Cache headers present
+    category: performance
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [perf.cache_headers]
+      tools: [zap]
+      zap_plugin_ids: ["10015"]
+    finding_cardinality: many
+    evidence_model: [url, cache_control, expires, etag]
+    rationale: Cache headers improve repeat visits and reduce origin load.
+    remediation: Add appropriate Cache-Control for static and dynamic resources.
+
+  - id: ux.viewport_meta_present
+    title: Viewport meta tag exists
+    category: performance
+    mode: safe
+    severity: low
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [perf.viewport]
+    finding_cardinality: one
+    evidence_model: [viewport]
+    rationale: Viewport meta is required for good mobile rendering.
+    remediation: Add a responsive viewport meta tag.
+
+  - id: accessibility.image_alt_coverage
+    title: Images have alternative text
+    category: accessibility
+    mode: safe
+    severity: low
+    weight: 2
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [perf.image_alt]
+    finding_cardinality: many
+    evidence_model: [image_count, missing_alt_count, sample_urls]
+    rationale: Missing alt text reduces accessibility and machine understanding.
+    remediation: Add meaningful alt text or mark decorative images appropriately.
+
+  - id: accessibility.landmarks_present
+    title: Basic landmarks present
+    category: accessibility
+    mode: safe
+    severity: low
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [perf.landmarks]
+    finding_cardinality: one
+    evidence_model: [landmark_count]
+    rationale: Landmarks help assistive technology navigate the page.
+    remediation: Use semantic HTML elements such as main, nav, header and footer.
+
+  - id: standards.internetnl_web_score
+    title: Internet.nl web standards score
+    category: standards
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: partial
+    implemented_by:
+      internal_results: [tools.internetnl_score]
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_categories]
+    rationale: Internet.nl combines IPv6, DNSSEC, HTTPS, RPKI and appsec/privacy standards.
+    remediation: Fix failing Internet.nl categories according to the detailed public result.
+
+  - id: standards.internetnl_mail_score
+    title: Internet.nl mail standards score
+    category: standards
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [internetnl]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_categories]
+    rationale: Internet.nl mail checks combine IPv6, DNSSEC, STARTTLS, DANE and mail auth.
+    remediation: Fix failing mail standards categories.
+
+  - id: microsoft_365.tenant_discovery
+    title: Microsoft 365 tenant discovery
+    category: microsoft_365
+    mode: safe
+    severity: info
+    weight: 1
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [m365.tenant_discovery]
+    finding_cardinality: one
+    evidence_model: [detected, mx_signals, txt_signals, openid_issuer]
+    rationale: Public Microsoft 365 signals help understand mail and identity exposure.
+    remediation: Review tenant exposure and expected DNS records.
+
+  - id: microsoft_365.legacy_auth_signal
+    title: Microsoft 365 legacy auth signal
+    category: microsoft_365
+    mode: safe
+    severity: medium
+    weight: 3
+    coverage_status: implemented
+    implemented_by:
+      internal_check_ids: [m365.legacy_auth_probe]
+    finding_cardinality: one
+    evidence_model: [probe_result]
+    rationale: Legacy auth can bypass modern MFA controls when enabled.
+    remediation: Disable legacy authentication and enforce modern auth policies.
+
+  - id: http.x_xss_protection_missing
+    title: Legacy X-XSS-Protection header missing
+    category: http_headers
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10016"]
+    finding_cardinality: many
+    evidence_model: [url, header_value]
+    rationale: ZAP Baseline still reports the legacy browser XSS protection header for compatibility context, even though modern browsers rely on CSP.
+    remediation: Prefer strong CSP; only add X-XSS-Protection if a legacy browser support policy requires it.
+
+  - id: http.parameter_override_possible
+    title: HTTP parameter override signal
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10026"]
+    finding_cardinality: many
+    evidence_model: [url, parameter_name, evidence]
+    rationale: Parameter override behavior can create authorization or routing ambiguities.
+    remediation: Reject duplicate/conflicting parameters and normalize request parsing consistently.
+
+  - id: web.password_autocomplete_enabled
+    title: Password autocomplete enabled
+    category: web_appsec
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10012"]
+    finding_cardinality: many
+    evidence_model: [url, form, input_name]
+    rationale: ZAP Baseline can report password autocomplete on forms; impact depends on application policy and browser behavior.
+    remediation: Review whether password managers are intended and configure sensitive forms according to policy.
+
+  - id: web.in_page_banner_disclosure
+    title: In-page banner information disclosure
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10009"]
+    finding_cardinality: many
+    evidence_model: [url, banner, product, version]
+    rationale: Product banners embedded in pages reveal technology choices to attackers.
+    remediation: Remove unnecessary banners or version strings from public pages.
+
+  - id: web.suspicious_comments_public
+    title: Suspicious public comments
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10027"]
+    finding_cardinality: many
+    evidence_model: [url, comment_excerpt, pattern]
+    rationale: HTML and JavaScript comments can disclose TODOs, credentials hints, internal paths or debugging notes.
+    remediation: Remove sensitive or operational comments from production assets.
+
+  - id: web.sensitive_information_in_url
+    title: Sensitive information appears in URL
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10024"]
+    finding_cardinality: many
+    evidence_model: [url, parameter_name, pattern]
+    rationale: Sensitive URL values leak through logs, browser history, analytics and referrers.
+    remediation: Move secrets and sensitive tokens out of URLs and rotate exposed values.
+
+  - id: web.sensitive_information_in_referrer
+    title: Sensitive information leaks via Referrer
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10025"]
+    finding_cardinality: many
+    evidence_model: [source_url, target_url, referrer_value]
+    rationale: Referrer leakage can disclose tokens or internal paths to third parties.
+    remediation: Remove sensitive URL values and set an appropriate Referrer-Policy.
+
+  - id: web.offsite_redirect
+    title: Off-site redirect detected
+    category: web_appsec
+    mode: aggressive
+    severity: low
+    weight: 3
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10028"]
+    finding_cardinality: many
+    evidence_model: [url, redirect_location]
+    rationale: Off-site redirects can be benign but may indicate open redirect or phishing abuse potential.
+    remediation: Validate redirect allowlists and prevent user-controlled arbitrary destinations.
+
+  - id: web.user_controlled_charset
+    title: User-controlled charset signal
+    category: web_appsec
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10030"]
+    finding_cardinality: many
+    evidence_model: [url, parameter_name, charset]
+    rationale: User-controlled charset can weaken output encoding assumptions.
+    remediation: Fix response charset server-side and ignore untrusted charset inputs.
+
+  - id: web.user_controlled_html_attribute
+    title: User-controlled HTML attribute
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10031"]
+    finding_cardinality: many
+    evidence_model: [url, attribute, parameter_name]
+    rationale: User-controlled attributes can become XSS primitives when escaping is incomplete.
+    remediation: Apply contextual output encoding and validate allowed attribute values.
+
+  - id: web.user_controlled_javascript_event
+    title: User-controlled JavaScript event attribute
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10043"]
+    finding_cardinality: many
+    evidence_model: [url, event_attribute, parameter_name]
+    rationale: User influence over event attributes is a strong XSS risk signal.
+    remediation: Remove inline event handlers and encode untrusted data by context.
+
+  - id: web.debug_token_disclosure
+    title: Debug token disclosure
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10056"]
+    finding_cardinality: many
+    evidence_model: [url, header_name, token_hint]
+    rationale: Debug tokens expose diagnostic endpoints or internal request context.
+    remediation: Disable debug tooling and remove debug headers in production.
+
+  - id: web.username_hash_disclosure
+    title: Username hash disclosure
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10057"]
+    finding_cardinality: many
+    evidence_model: [url, hash_value, context]
+    rationale: Hashes tied to users can help account enumeration or correlation.
+    remediation: Avoid exposing user-derived hashes unless they are intentionally public identifiers.
+
+  - id: web.timestamp_disclosure
+    title: Timestamp disclosure
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10096"]
+    finding_cardinality: many
+    evidence_model: [url, timestamp, context]
+    rationale: Timestamps can reveal deployment, backup or internal processing details.
+    remediation: Remove operational timestamps from public responses unless needed.
+
+  - id: web.hash_disclosure
+    title: Hash value disclosure
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10097"]
+    finding_cardinality: many
+    evidence_model: [url, hash_value, hash_type, context]
+    rationale: Public hashes can reveal internal objects, checksums or user-derived identifiers.
+    remediation: Review whether exposed hashes are necessary and non-sensitive.
+
+  - id: web.malicious_polyfill_domain
+    title: Known malicious polyfill domain referenced
+    category: supply_chain
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [zap]
+      zap_plugin_ids: ["10115"]
+    finding_cardinality: many
+    evidence_model: [url, resource_url, domain]
+    rationale: Loading scripts from known malicious or compromised polyfill domains creates direct client-side compromise risk.
+    remediation: Remove the resource, replace it with a trusted local dependency and review affected users.
+
+  - id: web.http2_supported
+    title: HTTP/2 support detected
+    category: protocol_inventory
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx, testssl]
+      httpx_flags: [http2]
+    finding_cardinality: many
+    evidence_model: [url, protocol]
+    rationale: HTTP/2 support is useful protocol inventory and can affect performance and vulnerability applicability.
+    remediation: Keep HTTP/2 implementation patched and disable only if unsupported by the platform.
+
+  - id: web.http3_supported
+    title: HTTP/3 or QUIC support detected
+    category: protocol_inventory
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx, testssl]
+      httpx_protocols: [http3]
+    finding_cardinality: many
+    evidence_model: [url, protocol, alpn]
+    rationale: HTTP/3 changes transport behavior and expands the protocol inventory.
+    remediation: Ensure QUIC/HTTP3 configuration is intentional, monitored and patched.
+
+  - id: web.websocket_service_detected
+    title: WebSocket service detected
+    category: protocol_inventory
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [websocket]
+    finding_cardinality: many
+    evidence_model: [url, websocket_url, status]
+    rationale: WebSocket endpoints often need separate authentication, origin and rate-limit review.
+    remediation: Review WebSocket auth, origin checks and message validation.
+
+  - id: web.http_pipeline_supported
+    title: HTTP/1.1 pipelining supported
+    category: protocol_inventory
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [pipeline]
+    finding_cardinality: many
+    evidence_model: [url, pipeline_supported]
+    rationale: HTTP pipelining is uncommon and can interact poorly with intermediaries.
+    remediation: Keep server/proxy behavior intentional and disable unsupported legacy features.
+
+  - id: web.favicon_fingerprint
+    title: Favicon fingerprint collected
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [favicon]
+    finding_cardinality: many
+    evidence_model: [url, favicon_hash]
+    rationale: Favicon hashes help identify technologies and correlate services.
+    remediation: Treat as inventory signal; investigate unexpected shared fingerprints.
+
+  - id: web.jarm_fingerprint
+    title: JARM TLS fingerprint collected
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [jarm]
+    finding_cardinality: many
+    evidence_model: [host, port, jarm_hash]
+    rationale: JARM fingerprints help cluster TLS services and identify unexpected infrastructure.
+    remediation: Treat as inventory signal and review unknown clusters.
+
+  - id: web.technology_cpe_detected
+    title: Technology CPE detected
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [cpe, tech-detect]
+    finding_cardinality: many
+    evidence_model: [url, technology, cpe]
+    rationale: CPE mapping connects public technology fingerprints to vulnerability databases.
+    remediation: Use CPE signals to prioritize patch and CVE checks.
+
+  - id: web.wordpress_component_inventory
+    title: WordPress plugin or theme inventory
+    category: fingerprint
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx, nuclei]
+      httpx_flags: [wordpress]
+    finding_cardinality: many
+    evidence_model: [url, component_type, name, version]
+    rationale: Public WordPress plugin/theme versions are high-value vulnerability targeting data.
+    remediation: Remove unused components and keep WordPress, plugins and themes updated.
+
+  - id: web.login_page_detected
+    title: Login page detected
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx, nuclei]
+      httpx_filters: [page_type_login]
+    finding_cardinality: many
+    evidence_model: [url, page_type]
+    rationale: Public login pages should be reviewed for MFA, rate limits and exposure.
+    remediation: Protect administrative login pages with MFA, access control and monitoring.
+
+  - id: web.captcha_or_bot_protection_detected
+    title: CAPTCHA or bot protection page detected
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_filters: [page_type_captcha]
+    finding_cardinality: many
+    evidence_model: [url, provider, page_type]
+    rationale: Bot protection affects crawlability, scanning fidelity and user flows.
+    remediation: Document protected pages and ensure legitimate users and crawlers are handled.
+
+  - id: web.parked_page_detected
+    title: Parked or placeholder page detected
+    category: quality
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_filters: [page_type_parked]
+    finding_cardinality: many
+    evidence_model: [url, page_type, provider]
+    rationale: Parked pages often indicate forgotten domains or inactive assets.
+    remediation: Remove unused DNS/services or replace parked content with intentional content.
+
+  - id: web.virtual_host_response_detected
+    title: Virtual host response detected
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [vhost]
+    finding_cardinality: many
+    evidence_model: [host, vhost, status_code, title]
+    rationale: Vhost behavior can reveal hidden or misrouted web applications on shared infrastructure.
+    remediation: Review unexpected vhost responses and restrict default virtual hosts.
+
+  - id: web.redirect_chain_inventory
+    title: Redirect chain inventory
+    category: quality
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [include-chain]
+    finding_cardinality: many
+    evidence_model: [url, chain, final_url]
+    rationale: Redirect chains influence SEO, security policy and scan target normalization.
+    remediation: Shorten unnecessary chains and ensure the final URL is canonical and HTTPS.
+
+  - id: web.fqdn_disclosure_in_response
+    title: FQDNs extracted from response
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 3
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [extract-fqdn]
+    finding_cardinality: many
+    evidence_model: [url, extracted_fqdn, context]
+    rationale: Response bodies or headers can reveal internal or forgotten hostnames.
+    remediation: Remove unintended host references and add discovered names to inventory review.
+
+  - id: network.host_alive
+    title: Host is alive
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [naabu]
+      naabu_flags: [host-discovery]
+    finding_cardinality: many
+    evidence_model: [host, ip, discovery_method]
+    rationale: Host discovery separates reachable infrastructure from stale DNS.
+    remediation: Review reachable hosts and remove stale public exposure.
+
+  - id: network.service_version_detected
+    title: Network service version detected
+    category: fingerprint
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [naabu, greenbone]
+      naabu_flags: [service-version]
+    finding_cardinality: many
+    evidence_model: [host, port, service, product, version]
+    rationale: Network service versions enable precise CVE and patch-level evaluation.
+    remediation: Keep services patched and reduce unnecessary version disclosure.
+
+  - id: network.cdn_or_waf_detected
+    title: CDN or WAF detected
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx, naabu]
+      httpx_flags: [cdn]
+      naabu_flags: [display-cdn]
+    finding_cardinality: many
+    evidence_model: [host, provider, detected_by]
+    rationale: CDN/WAF presence changes exposure interpretation and port scanning scope.
+    remediation: Document expected providers and investigate unknown fronting.
+
+  - id: network.asn_inventory
+    title: ASN inventory
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [asn]
+    finding_cardinality: many
+    evidence_model: [ip, asn, organization, country]
+    rationale: ASN context helps identify third-party hosting and unexpected infrastructure ownership.
+    remediation: Review unexpected ASNs and align hosting ownership with asset inventory.
+
+  - id: tls.starttls_service_supported
+    title: STARTTLS service supported
+    category: tls
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [testssl]
+      testssl_starttls_protocols: [ftp, smtp, lmtp, pop3, imap, xmpp, xmpp-server, telnet, ldap, nntp, sieve, postgres, mysql]
+    finding_cardinality: many
+    evidence_model: [host, port, protocol, starttls_supported]
+    rationale: STARTTLS support is required for secure opportunistic encryption on many non-HTTPS protocols.
+    remediation: Enable STARTTLS where expected and monitor protocol-specific TLS posture.
+
+  - id: tls.starttls_injection_vulnerable
+    title: STARTTLS injection vulnerability
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [testssl]
+      testssl_flags: [starttls-injection]
+    finding_cardinality: many
+    evidence_model: [host, port, protocol, finding]
+    rationale: STARTTLS injection can downgrade or manipulate encrypted protocol negotiation.
+    remediation: Patch affected services and enforce strict TLS negotiation.
+
+  - id: tls.secure_renegotiation_missing_or_vulnerable
+    title: Secure renegotiation missing or vulnerable
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_flags: [renegotiation]
+    finding_cardinality: many
+    evidence_model: [host, port, finding]
+    rationale: Insecure TLS renegotiation can allow protocol-level attacks.
+    remediation: Patch TLS libraries and disable unsafe renegotiation.
+
+  - id: tls.opossum_vulnerable
+    title: Opossum TLS vulnerability
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [testssl]
+      testssl_flags: [opossum]
+    finding_cardinality: many
+    evidence_model: [host, port, finding]
+    rationale: testssl can probe for Opossum implementation vulnerability signals.
+    remediation: Patch affected TLS stacks and verify vendor guidance.
+
+  - id: tls.winshock_vulnerable
+    title: Winshock vulnerability
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [testssl]
+      testssl_flags: [winshock]
+    finding_cardinality: many
+    evidence_model: [host, port, finding]
+    rationale: Winshock affects vulnerable Windows TLS implementations.
+    remediation: Patch affected Windows systems and disable obsolete TLS features.
+
+  - id: tls.grease_or_size_limit_bug
+    title: TLS implementation GREASE or size-limit bug
+    category: tls
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [testssl]
+      testssl_flags: [grease]
+    finding_cardinality: many
+    evidence_model: [host, port, bug_type, finding]
+    rationale: GREASE and size-limit tests reveal brittle TLS implementations that may fail modern clients.
+    remediation: Update TLS termination software and retest modern client compatibility.
+
+  - id: tls.client_compatibility_matrix
+    title: TLS client compatibility matrix
+    category: tls
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: external_raw
+    implemented_by:
+      tools: [testssl]
+      testssl_flags: [client-simulation]
+    finding_cardinality: many
+    evidence_model: [host, port, client, negotiated_protocol, negotiated_cipher]
+    rationale: Client simulation shows which browser/client generations can connect.
+    remediation: Use compatibility data to balance legacy support against security policy.
+
+  - id: standards.internetnl_web_ipv6
+    title: Internet.nl web IPv6 category
+    category: standards
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: partial
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [web_ipv6]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: Internet.nl web IPv6 checks validate modern address reachability for web services.
+    remediation: Add and monitor IPv6 web reachability according to Internet.nl details.
+
+  - id: standards.internetnl_web_dnssec
+    title: Internet.nl web DNSSEC category
+    category: standards
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: partial
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [web_dnssec]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: Internet.nl DNSSEC category validates resolver-verifiable web-domain DNS security.
+    remediation: Fix DNSSEC chain and validation issues.
+
+  - id: standards.internetnl_web_https
+    title: Internet.nl web HTTPS category
+    category: standards
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: partial
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [web_https]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: Internet.nl HTTPS category combines certificate, TLS and HTTPS configuration standards.
+    remediation: Fix failing HTTPS/TLS items from Internet.nl result details.
+
+  - id: standards.internetnl_web_appsec_privacy
+    title: Internet.nl web appsec/privacy category
+    category: standards
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: partial
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [web_appsecpriv]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: Internet.nl appsec/privacy category checks modern web security and privacy headers.
+    remediation: Add or tighten failing HTTP security/privacy headers.
+
+  - id: standards.internetnl_web_rpki
+    title: Internet.nl web RPKI category
+    category: standards
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: partial
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [web_rpki]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: RPKI reduces BGP route hijack risk for web-service prefixes.
+    remediation: Configure valid ROAs for web infrastructure prefixes.
+
+  - id: standards.internetnl_mail_auth
+    title: Internet.nl mail authentication category
+    category: standards
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [mail_auth]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: Internet.nl mail auth validates SPF, DKIM and DMARC posture.
+    remediation: Fix SPF, DKIM and DMARC alignment and enforcement issues.
+
+  - id: standards.internetnl_mail_starttls_dane
+    title: Internet.nl mail STARTTLS and DANE category
+    category: standards
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [mail_starttls]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: Internet.nl mail STARTTLS category validates encrypted SMTP transport and DANE-related posture.
+    remediation: Enable STARTTLS, fix certificates and add DANE/TLSA where policy requires it.
+
+  - id: standards.internetnl_mail_rpki
+    title: Internet.nl mail RPKI category
+    category: standards
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [internetnl]
+      internetnl_categories: [mail_rpki]
+    finding_cardinality: one
+    evidence_model: [score, result_url, failed_subtests]
+    rationale: RPKI reduces route hijack risk for mail infrastructure prefixes.
+    remediation: Configure valid ROAs for mail infrastructure prefixes.
+
+  - id: vulnerability.greenbone_feed_available
+    title: Greenbone vulnerability feed available
+    category: vulnerability
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_components: [vulnerability-tests, notus-data, scap-data, cert-bund-data, dfn-cert-data]
+    finding_cardinality: one
+    evidence_model: [feed_status, feed_versions, last_update]
+    rationale: Greenbone results are meaningful only when feed data and scanner services are available.
+    remediation: Start the Greenbone CE stack and wait for feed synchronization before scanning.
+
+  - id: compliance.greenbone_policy_match
+    title: Greenbone compliance policy result
+    category: compliance
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      dynamic_rule_ids: [policy_id, control_id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, policy_id, control_id, result, severity]
+    rationale: Greenbone can evaluate compliance policies when relevant data objects and scan configs are loaded.
+    remediation: Follow the failed control guidance and document exceptions.
+
+  - id: vulnerability.notus_package_vulnerability
+    title: Notus package vulnerability
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_components: [notus-data, openvasd]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, package, installed_version, fixed_version, cve]
+    rationale: Notus detects vulnerable installed packages using local package inventory checks.
+    remediation: Apply package updates or vendor security backports.
+
+  - id: greenbone.vendor_security_advisory_check
+    title: Greenbone vendor security advisory check
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [local_security_checks, microsoft_bulletins, vendor_appliance_checks]
+      dynamic_rule_ids: [nvt_oid, notus_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, vendor_or_distribution, advisory_id, package, fixed_version, cves]
+    rationale: Greenbone includes distribution and vendor security checks that map installed software or appliance versions to public advisories.
+    remediation: Apply vendor patches, package updates or supported backports for the affected platform.
+
+  - id: greenbone.general_nvt_security_check
+    title: Greenbone general NVT security check
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [General, Windows, Settings]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, nvt_oid, family, severity, cves, evidence]
+    rationale: Greenbone general NVTs cover product- or platform-specific security checks that do not fit a narrower feed family.
+    remediation: Follow the NVT-specific remediation and vendor guidance.
+
+  - id: greenbone.web_application_vulnerability
+    title: Greenbone web application vulnerability check
+    category: web_appsec
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Web application abuses]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, nvt_oid, product, vulnerability_class, cves]
+    rationale: Greenbone web application NVTs detect externally visible web weaknesses such as injection, traversal and exposed vulnerable components.
+    remediation: Patch the affected application, remove the exposed vulnerable endpoint or apply the NVT-specific mitigation.
+
+  - id: greenbone.product_detection
+    title: Greenbone product detection check
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Product detection, Service detection]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, product, version, detection_method, nvt_oid]
+    rationale: Product and service detection results provide evidence for later vulnerability matching and asset inventory.
+    remediation: Treat as inventory evidence and investigate unexpected products or versions.
+
+  - id: greenbone.denial_of_service_check
+    title: Greenbone denial-of-service vulnerability check
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Denial of Service]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, service, nvt_oid, cves, impact]
+    rationale: Denial-of-service checks identify remotely triggerable crashes, hangs or resource exhaustion conditions.
+    remediation: Patch affected services and add exposure controls for unauthenticated network paths.
+
+  - id: greenbone.database_security_check
+    title: Greenbone database security check
+    category: database_security
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Databases]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, database_product, nvt_oid, evidence]
+    rationale: Database NVTs detect exposed or vulnerable database services and unsafe database configuration.
+    remediation: Patch the database, require authentication and restrict database network exposure.
+
+  - id: greenbone.web_server_security_check
+    title: Greenbone web server security check
+    category: web_server_security
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Web Servers]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, web_server, nvt_oid, evidence]
+    rationale: Web server NVTs cover server-specific vulnerabilities and unsafe deployment behavior.
+    remediation: Patch the web server and harden public configuration according to the NVT result.
+
+  - id: greenbone.policy_or_compliance_check
+    title: Greenbone policy or compliance check
+    category: compliance
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Policy, Compliance, IT-Grundschutz, IT-Grundschutz-15, IT-Grundschutz-deprecated]
+      dynamic_rule_ids: [nvt_oid, policy_id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, control_family, control_id, result, evidence]
+    rationale: Policy and compliance checks validate configuration against security baselines or regulatory control families.
+    remediation: Apply the control-specific hardening guidance or document a risk-accepted exception.
+
+  - id: greenbone.default_account_check
+    title: Greenbone default account check
+    category: identity
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Default Accounts, Credentials]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, service, account, credential_signal, nvt_oid]
+    rationale: Default or known credentials are a direct compromise path on exposed services.
+    remediation: Disable default accounts, rotate credentials and enforce strong authentication.
+
+  - id: greenbone.network_device_security_check
+    title: Greenbone network device security check
+    category: network_security
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [CISCO, Huawei, JunOS Local Security Checks, FortiOS Local Security Checks, Palo Alto PAN-OS Local Security Checks, F5 Local Security Checks]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, vendor, product, nvt_oid, cves]
+    rationale: Network device checks cover routers, firewalls, load balancers and network appliances that are often high-impact edge assets.
+    remediation: Patch firmware, restrict management interfaces and follow vendor hardening guidance.
+
+  - id: greenbone.tls_or_crypto_check
+    title: Greenbone TLS or cryptography check
+    category: tls
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [SSL and TLS]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, protocol_or_cipher, nvt_oid, evidence]
+    rationale: Greenbone TLS checks detect weak protocol, certificate or cryptographic service posture.
+    remediation: Apply current TLS hardening guidance and patch affected cryptographic libraries.
+
+  - id: greenbone.malware_or_compromise_check
+    title: Greenbone malware or compromise check
+    category: compromise
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Malware, Gain a shell remotely]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, indicator_type, nvt_oid, evidence]
+    rationale: Malware, shell or compromise checks indicate active compromise or direct remote control risk.
+    remediation: Isolate the affected asset and follow incident-response eradication and recovery procedures.
+
+  - id: greenbone.remote_file_or_service_abuse
+    title: Greenbone remote file or service abuse check
+    category: exposure
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Remote file access, FTP, SMTP problems, SNMP, RPC, Useless services, Brute force attacks, Peer-To-Peer File Sharing, Port scanners, Nmap NSE, Nmap NSE net]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, service, protocol, nvt_oid, evidence]
+    rationale: Service abuse checks cover exposed legacy protocols, brute-force surfaces, unsafe remote file access and service-specific weaknesses.
+    remediation: Disable unnecessary services, restrict access and harden protocol-specific configuration.
+
+  - id: greenbone.buffer_overflow_or_memory_corruption
+    title: Greenbone buffer overflow or memory-corruption check
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Buffer overflow]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, product, nvt_oid, cves, evidence]
+    rationale: Buffer overflow and memory-corruption checks often indicate remote code execution or crash risk.
+    remediation: Patch affected software and restrict exposure until fixed.
+
+  - id: greenbone.privilege_escalation_check
+    title: Greenbone privilege escalation check
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_families: [Privilege escalation]
+      dynamic_rule_ids: [nvt_oid]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, product, nvt_oid, cves, local_or_remote]
+    rationale: Privilege escalation findings can turn limited footholds into full host compromise.
+    remediation: Patch affected components and reduce local attack surface.
+
+  - id: greenbone.cert_bund_advisory
+    title: Greenbone CERT-Bund advisory
+    category: vulnerability_intelligence
+    mode: aggressive
+    severity: high
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_feed: [cert-bund]
+      dynamic_rule_ids: [advisory_id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [advisory_id, cves, severity, remote_attack, reference_url]
+    rationale: CERT-Bund advisories provide public vulnerability intelligence and references for affected products.
+    remediation: Follow advisory and vendor remediation guidance.
+
+  - id: greenbone.dfn_cert_advisory
+    title: Greenbone DFN-CERT advisory
+    category: vulnerability_intelligence
+    mode: aggressive
+    severity: high
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_feed: [dfn-cert]
+      dynamic_rule_ids: [advisory_id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [advisory_id, cves, severity, remote_attack, reference_url]
+    rationale: DFN-CERT advisories provide public vulnerability intelligence and references for affected products.
+    remediation: Follow advisory and vendor remediation guidance.
+
+  - id: greenbone.scap_cve_metadata
+    title: Greenbone SCAP CVE metadata
+    category: vulnerability_intelligence
+    mode: aggressive
+    severity: high
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [greenbone]
+      greenbone_feed: [scap]
+      dynamic_rule_ids: [cve_id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [cve, severity, cvss, cwes, vulnerable_cpe_match_count]
+    rationale: SCAP CVE metadata connects detected products and CPEs to public CVE records and weakness classes.
+    remediation: Use the CVE metadata to prioritize patching and confirm affected CPE/product versions.
+
+  - id: nuclei.cloud_misconfiguration
+    title: Nuclei cloud misconfiguration template
+    category: cloud_security
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [cloud]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, cloud_provider, template_id, severity, evidence]
+    rationale: Nuclei cloud templates cover public or authenticated cloud configuration weaknesses.
+    remediation: Fix cloud control-plane configuration according to provider guidance.
+
+  - id: nuclei.exposed_panel
+    title: Nuclei exposed panel template
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/exposed-panels]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, panel_name, template_id, severity]
+    rationale: Exposed panels expand login and admin attack surface.
+    remediation: Restrict administrative panels and enforce MFA/rate limits.
+
+  - id: nuclei.default_login_or_credential
+    title: Nuclei default login or credential template
+    category: vulnerability
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/default-logins, network/default-login]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, service, template_id, credential_signal]
+    rationale: Default credentials are a direct compromise path.
+    remediation: Disable default accounts and rotate all default or leaked credentials.
+
+  - id: nuclei.file_secret_exposure
+    title: Nuclei file secret exposure template
+    category: exposure
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [file/keys, file/logs, http/exposures]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url_or_file, secret_type, template_id, context]
+    rationale: Nuclei templates can identify exposed keys, logs and configuration artifacts.
+    remediation: Remove exposed material, rotate secrets and audit access.
+
+  - id: nuclei.malware_or_webshell_indicator
+    title: Nuclei malware or webshell indicator template
+    category: compromise
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [file/malware, file/webshell, ssl/c2]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, indicator_type, template_id, matched_evidence]
+    rationale: Malware, webshell or C2 indicators suggest active compromise or hostile infrastructure.
+    remediation: Isolate affected assets, investigate compromise and eradicate malicious artifacts.
+
+  - id: nuclei.http_misconfiguration
+    title: Nuclei HTTP misconfiguration template
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/misconfiguration]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, template_id, severity, technology, evidence]
+    rationale: Nuclei HTTP misconfiguration templates cover exposed dashboards, unauthenticated components, unsafe debug endpoints and weak web settings.
+    remediation: Follow template-specific remediation, restrict access and remove unsafe public configuration.
+
+  - id: nuclei.web_vulnerability_signal
+    title: Nuclei web vulnerability template
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/vulnerabilities, dast/vulnerabilities]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, template_id, severity, vulnerability_class, evidence]
+    rationale: Nuclei vulnerability templates identify externally testable web weaknesses that are not necessarily tied to a CVE.
+    remediation: Validate exploitability, patch or reconfigure the affected application and retest the template.
+
+  - id: nuclei.osint_public_exposure
+    title: Nuclei OSINT public exposure template
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/osint]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, template_id, public_source, exposed_value]
+    rationale: OSINT templates surface information already visible through public pages, files or indexed sources.
+    remediation: Remove unintended public information and review indexing, metadata and published artifacts.
+
+  - id: nuclei.technology_detection
+    title: Nuclei technology detection template
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/technologies, headless/technologies]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, technology, version, template_id]
+    rationale: Technology fingerprints help route vulnerability checks and expose unexpected products or stacks.
+    remediation: Treat as inventory evidence and investigate unexpected technologies or versions.
+
+  - id: nuclei.token_spray_or_credential_attack
+    title: Nuclei token spray or credential attack workflow
+    category: identity
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/token-spray, http/credential-stuffing]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, identity_provider, template_id, credential_signal]
+    rationale: Token spray and credential-stuffing templates model account compromise attempts against exposed identity surfaces.
+    remediation: Enforce MFA, rate limits, lockout policy and credential hygiene for affected identity endpoints.
+
+  - id: nuclei.iot_exposure
+    title: Nuclei IoT exposure template
+    category: attack_surface
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/iot]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, device_type, vendor, template_id, evidence]
+    rationale: Public IoT and embedded-device interfaces are frequently weakly patched and exposed unintentionally.
+    remediation: Restrict management interfaces, update firmware and remove unintended public access.
+
+  - id: nuclei.network_detection
+    title: Nuclei network service detection template
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/detection]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, protocol, product, template_id]
+    rationale: Network detection templates identify non-HTTP services and products for attack-surface inventory.
+    remediation: Review detected services and disable or restrict unexpected exposure.
+
+  - id: nuclei.network_misconfiguration
+    title: Nuclei network misconfiguration template
+    category: network_security
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/misconfig]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, protocol, template_id, evidence]
+    rationale: Network misconfiguration templates identify unsafe service behavior visible without credentials.
+    remediation: Harden the affected service, restrict exposure and apply vendor guidance.
+
+  - id: nuclei.network_exposure
+    title: Nuclei network exposure template
+    category: exposure
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/exposures]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, protocol, template_id, evidence]
+    rationale: Network exposure templates surface sensitive service information or exposed network endpoints.
+    remediation: Remove unintended public access and restrict the service to trusted networks.
+
+  - id: nuclei.c2_or_hostile_infrastructure_indicator
+    title: Nuclei C2 or hostile infrastructure indicator
+    category: compromise
+    mode: aggressive
+    severity: critical
+    weight: 8
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/c2, ssl/c2]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, indicator_type, template_id, matched_evidence]
+    rationale: C2 indicators can identify compromised or hostile infrastructure tied to known tooling.
+    remediation: Investigate ownership, isolate affected assets and follow incident-response handling.
+
+  - id: nuclei.jarm_fingerprint
+    title: Nuclei JARM fingerprint template
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/jarm]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, jarm_hash, template_id]
+    rationale: JARM templates classify TLS services by fingerprint and can cluster related infrastructure.
+    remediation: Treat as inventory evidence and investigate unexpected fingerprints.
+
+  - id: nuclei.honeypot_detected
+    title: Nuclei honeypot detection template
+    category: evidence_quality
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/honeypot, network/honeypot]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, honeypot_signal, template_id]
+    rationale: Honeypot detection changes how findings and asset ownership should be interpreted.
+    remediation: Confirm whether the asset is an intentional honeypot and exclude it from normal risk scoring if appropriate.
+
+  - id: nuclei.file_configuration_audit
+    title: Nuclei file configuration audit template
+    category: configuration_audit
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [file/audit]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [file_path, product, template_id, policy_result]
+    rationale: File audit templates evaluate local configuration files for insecure settings.
+    remediation: Apply the product-specific hardening guidance and retest configuration files.
+
+  - id: nuclei.android_static_analysis
+    title: Nuclei Android static analysis template
+    category: mobile_security
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [file/android]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [file_path, package_name, template_id, evidence]
+    rationale: Android static templates identify risky manifest, WebView, permission and certificate-validation patterns.
+    remediation: Fix the flagged Android configuration or source pattern and rebuild the application.
+
+  - id: nuclei.code_static_vulnerability
+    title: Nuclei code static vulnerability template
+    category: code_security
+    mode: aggressive
+    severity: high
+    weight: 6
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [code, javascript]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [file_path, language, template_id, evidence]
+    rationale: Nuclei code and JavaScript templates can identify insecure source patterns without executing against a live service.
+    remediation: Patch the vulnerable source pattern and add tests or static checks to prevent recurrence.
+
+  - id: nuclei.workflow_product_bundle
+    title: Nuclei product workflow bundle
+    category: evidence_quality
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [workflows]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [asset, workflow_id, product, child_templates]
+    rationale: Workflow templates orchestrate multiple checks for a product family and should be tracked as provenance rather than a single weakness.
+    remediation: Review the child template findings produced by the workflow.
+
+  - id: nuclei.known_advisory_template
+    title: Nuclei known advisory template
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/cnvd]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, advisory_id, product, template_id, evidence]
+    rationale: Some Nuclei templates are tied to non-CVE public advisories such as CNVD identifiers.
+    remediation: Patch according to the referenced advisory or vendor guidance and verify the template no longer matches.
+
+  - id: nuclei.fuzzing_probe_signal
+    title: Nuclei fuzzing probe template
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 5
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/fuzzing]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, probe_type, template_id, evidence]
+    rationale: Fuzzing templates probe for behavior such as LFI, command injection, WAF bypass, weak credentials or exposed modules.
+    remediation: Confirm the specific probe result and fix the underlying template-specific issue.
+
+  - id: nuclei.dns_template_signal
+    title: Nuclei DNS template signal
+    category: dns
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [dns]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [hostname, record_type, template_id, value]
+    rationale: Nuclei DNS templates detect DNS posture, ownership, service fingerprints and takeover-related records.
+    remediation: Review DNS-specific findings and align records with intended ownership and mail/service policy.
+
+  - id: nuclei.headless_interaction_signal
+    title: Nuclei headless browser interaction template
+    category: web_appsec
+    mode: aggressive
+    severity: medium
+    weight: 4
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [headless]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, browser_signal, template_id, evidence]
+    rationale: Headless templates exercise browser-side behavior that passive HTTP checks may miss.
+    remediation: Fix the client-side behavior indicated by the matched template and retest in a browser context.
+
+  - id: nuclei.network_enumeration_signal
+    title: Nuclei network enumeration template
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/enumeration]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, protocol, enumerated_value, template_id]
+    rationale: Network enumeration templates reveal protocol users, topics, commands or metadata exposed without normal application context.
+    remediation: Restrict enumeration endpoints, require authentication and reduce unauthenticated service metadata.
+
+  - id: nuclei.network_vulnerability_signal
+    title: Nuclei network vulnerability template
+    category: vulnerability
+    mode: aggressive
+    severity: high
+    weight: 7
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/vulnerabilities]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, protocol, template_id, evidence]
+    rationale: Network vulnerability templates identify exploitable non-HTTP service weaknesses.
+    remediation: Patch or disable the affected service and restrict network exposure.
+
+  - id: nuclei.backdoor_indicator
+    title: Nuclei backdoor indicator template
+    category: compromise
+    mode: aggressive
+    severity: critical
+    weight: 9
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [network/backdoor]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [host, port, product, template_id, evidence]
+    rationale: Backdoor templates indicate hostile or compromised service behavior.
+    remediation: Isolate the device or service, investigate compromise and replace or reflash affected firmware where needed.
+
+  - id: nuclei.miscellaneous_public_signal
+    title: Nuclei miscellaneous public signal
+    category: exposure
+    mode: aggressive
+    severity: low
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [nuclei]
+      nuclei_template_paths: [http/miscellaneous, http/global-matchers]
+      dynamic_rule_ids: [template-id]
+    finding_cardinality: dynamic_rule
+    evidence_model: [url, signal_type, template_id, evidence]
+    rationale: Miscellaneous templates capture public metadata, policy files, privacy files, weakly exposed endpoints and cross-cutting global matchers.
+    remediation: Review the specific template match and remove or document unintended public signals.
+
+  - id: inventory.subdomain_source_attribution
+    title: Subdomain discovery source attribution
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [subfinder, amass]
+      subfinder_flags: [json, collect-sources]
+      amass_flags: [enum, list]
+    finding_cardinality: many
+    evidence_model: [hostname, source_name, source_type]
+    rationale: Source attribution helps distinguish CT/log discoveries, passive OSINT, brute-force candidates and third-party intelligence.
+    remediation: Review high-risk sources and verify ownership of names discovered outside authoritative DNS.
+
+  - id: inventory.asset_graph_relationship
+    title: Asset relationship graph edge
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [amass]
+      amass_commands: [assoc, enum, subs, viz]
+    finding_cardinality: many
+    evidence_model: [source_asset, relationship_type, target_asset, source]
+    rationale: Amass models relationships among domains, subdomains, addresses, ASNs and discovered infrastructure.
+    remediation: Use the graph to identify unknown ownership, third-party dependencies and unexpected scope expansion.
+
+  - id: inventory.tool_capability_metadata
+    title: Tool capability or scan-control metadata
+    category: evidence_quality
+    mode: safe
+    severity: info
+    weight: 0
+    coverage_status: planned
+    implemented_by:
+      tools: [amass, greenbone]
+      dynamic_rule_ids: [tool_capability_id, feed_stream]
+    finding_cardinality: dynamic_rule
+    evidence_model: [tool, capability, configuration_or_stream, access]
+    rationale: Some tool outputs describe scan configuration, report formats or capability metadata rather than target risk.
+    remediation: Use as provenance and scanner capability evidence; do not score as target weakness unless a concrete finding references it.
+
+  - id: inventory.asn_cidr_scope
+    title: ASN or CIDR scope expansion
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 2
+    coverage_status: planned
+    implemented_by:
+      tools: [amass]
+      amass_flags: [asn, cidr, addr]
+    finding_cardinality: many
+    evidence_model: [asn, cidr, ip_range, related_domain, source]
+    rationale: Related ASNs and CIDR ranges can expose infrastructure outside the original hostname.
+    remediation: Confirm whether discovered ranges are in scope and add owned ranges to asset management.
+
+  - id: dns.generated_or_bruteforced_name
+    title: Generated or brute-forced DNS name candidate
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [amass]
+      amass_flags: [alts, brute, aw, awm, w, wm]
+    finding_cardinality: many
+    evidence_model: [hostname, generation_method, resolved, source_wordlist]
+    rationale: Brute-forced or altered names can reveal unindexed public assets.
+    remediation: Review resolved candidates and remove or protect unintended public hosts.
+
+  - id: network.reverse_ptr_inventory
+    title: Reverse PTR inventory
+    category: attack_surface
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [naabu]
+      naabu_flags: [rev-ptr]
+    finding_cardinality: many
+    evidence_model: [ip, ptr_name]
+    rationale: Reverse DNS names can reveal service purpose, environment names or related assets.
+    remediation: Remove sensitive naming from PTR records and align reverse DNS with public inventory.
+
+  - id: web.response_fingerprint
+    title: HTTP response fingerprint
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [hash, md5, simhash, content-length, content-type, body-preview]
+    finding_cardinality: many
+    evidence_model: [url, content_type, content_length, hash_type, hash, body_preview]
+    rationale: Response fingerprints help cluster identical deployments, parked pages and unexpected mirrored content.
+    remediation: Review unexpected identical fingerprints and remove unintended duplicate deployments.
+
+  - id: web.screenshot_inventory
+    title: Web screenshot inventory
+    category: quality
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [screenshot, screenshot-bytes, system-chrome, screenshot-timeout]
+    finding_cardinality: many
+    evidence_model: [url, screenshot_file, screenshot_hash, page_title]
+    rationale: Screenshots make exposed or unexpected web surfaces reviewable by humans.
+    remediation: Review screenshots for forgotten applications, login panels, errors and sensitive visual content.
+
+  - id: web.headless_js_execution_result
+    title: Headless JavaScript execution result
+    category: fingerprint
+    mode: aggressive
+    severity: info
+    weight: 1
+    coverage_status: planned
+    implemented_by:
+      tools: [httpx]
+      httpx_flags: [jsc, headless]
+    finding_cardinality: many
+    evidence_model: [url, expression, value]
+    rationale: Headless evaluation can expose client-rendered metadata and runtime application signals.
+    remediation: Treat extracted values as inventory evidence and remove unintended public client-side disclosures.
+
+dynamic_expansion_backlog:
+  - family: zap.plugin_id
+    atomic_id_pattern: zap.<pluginid>
+    expansion_rule: Create a source-specific atomic check only when the ZAP plugin id represents a distinct condition.
+    not_allowed: Do not create one check per affected URL.
+
+  - family: nuclei.template_id
+    atomic_id_pattern: nuclei.<template-id>
+    expansion_rule: Create one atomic check per stable template id when template metadata describes a unique vulnerability, exposure, takeover or misconfiguration.
+    not_allowed: Do not create one check per matched host or URL.
+
+  - family: greenbone.nvt_oid
+    atomic_id_pattern: greenbone.nvt.<oid>
+    expansion_rule: Create one atomic check per Greenbone NVT OID or canonical CVE when the NVT maps to a distinct vulnerability condition.
+    not_allowed: Do not create one check per scanned port or host.
+
+  - family: cve
+    atomic_id_pattern: cve.<CVE-ID>
+    expansion_rule: CVE can be an atomic check when the product/version/evidence indicates the concrete CVE condition.
+    not_allowed: Do not create one check per asset affected by the same CVE.

@@ -1,0 +1,113 @@
+schema_version: 1
+kind: domain-score.source-catalog-manifest
+generated_from: 'ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a'
+generated_at: "2026-07-05"
+notes:
+  - This manifest lists generated source catalogs used by the product atomic-check catalog.
+  - Counts reflect the inspected tools image and static capability definitions in the generator.
+sources:
+  - source: 'nuclei'
+    path: 'catalog/generated/nuclei-template-index.yaml'
+    index_type: 'template_rule_index'
+    count: 13375
+    atomic_id_pattern: 'nuclei.<template-id>'
+  - source: 'testssl'
+    path: 'catalog/generated/testssl-jsonid-index.yaml'
+    index_type: 'json_id_index'
+    count: 107
+    atomic_id_pattern: 'testssl.<json-id>'
+  - source: 'zap'
+    path: 'catalog/generated/zap-rule-index.yaml'
+    index_type: 'plugin_rule_index'
+    count: 104
+    atomic_id_pattern: 'zap.<pluginid>'
+  - source: 'internetnl'
+    path: 'catalog/generated/internetnl-subtest-index.yaml'
+    index_type: 'subtest_index'
+    count: 76
+    atomic_id_pattern: 'internetnl.<category>.<subtest-id>'
+  - source: 'greenbone'
+    path: 'catalog/generated/greenbone-feed-capability-index.yaml'
+    index_type: 'feed_capability_index'
+    count: 9
+    atomic_id_pattern: 'greenbone.<feed-family>.<id>'
+  - source: 'greenbone'
+    path: 'catalog/generated/greenbone-nvt-index.yaml.gz'
+    index_type: 'greenbone_nvt_index'
+    count: 95080
+    atomic_id_pattern: 'greenbone.nvt.<oid>'
+  - source: 'greenbone'
+    path: 'catalog/generated/greenbone-notus-advisory-index.yaml.gz'
+    index_type: 'greenbone_notus_advisory_index'
+    count: 86723
+    atomic_id_pattern: 'greenbone.notus.<oid>'
+  - source: 'greenbone'
+    path: 'catalog/generated/greenbone-cert-advisory-index.yaml.gz'
+    index_type: 'greenbone_cert_advisory_index'
+    count: 70401
+    atomic_id_pattern: 'greenbone.cert.<advisory-id>'
+  - source: 'greenbone'
+    path: 'catalog/generated/greenbone-gvmd-data-object-index.yaml'
+    index_type: 'greenbone_gvmd_data_object_index'
+    count: 23
+    atomic_id_pattern: 'greenbone.<data-object-type>.<uuid>'
+  - source: 'greenbone'
+    path: 'catalog/generated/greenbone-scap-cve-index.yaml.gz'
+    index_type: 'greenbone_scap_cve_index'
+    count: 363055
+    atomic_id_pattern: 'greenbone.scap.<cve-id>'
+  - source: 'projectdiscovery'
+    path: 'catalog/generated/projectdiscovery-capability-index.yaml'
+    index_type: 'capability_index'
+    count: 43
+    atomic_id_pattern: 'projectdiscovery.<tool>.<capability>'
+  - source: 'amass'
+    path: 'catalog/generated/amass-capability-index.yaml'
+    index_type: 'capability_index'
+    count: 17
+    atomic_id_pattern: 'amass.<command>.<capability>'
+  - source: 'subfinder'
+    path: 'catalog/generated/subfinder-provider-index.yaml'
+    index_type: 'provider_index'
+    count: 50
+    atomic_id_pattern: 'subfinder.provider.<name>'
+  - source: 'amass'
+    path: 'catalog/generated/amass-provider-index.yaml'
+    index_type: 'provider_index'
+    count: 97
+    atomic_id_pattern: 'amass.provider.<script-category>.<script-name>'
+  - source: 'mozilla_observatory'
+    path: 'catalog/generated/mozilla-observatory-expectation-index.yaml'
+    index_type: 'expectation_index'
+    count: 66
+    atomic_id_pattern: 'mozilla_observatory.<expectation>'
+  - source: 'ssl_labs'
+    path: 'catalog/generated/ssl-labs-api-field-index.yaml'
+    index_type: 'api_field_index'
+    count: 64
+    atomic_id_pattern: 'ssl_labs.<response-object>.<field>'
+  - source: 'shodan_internetdb'
+    path: 'catalog/generated/shodan-internetdb-field-index.yaml'
+    index_type: 'api_field_index'
+    count: 6
+    atomic_id_pattern: 'shodan_internetdb.<field>'
+  - source: 'urlhaus_host'
+    path: 'catalog/generated/urlhaus-host-field-index.yaml'
+    index_type: 'api_field_index'
+    count: 16
+    atomic_id_pattern: 'urlhaus_host.<field>'
+  - source: 'spamhaus_dbl'
+    path: 'catalog/generated/spamhaus-dbl-return-code-index.yaml'
+    index_type: 'reputation_code_index'
+    count: 13
+    atomic_id_pattern: 'spamhaus_dbl.<label>'
+  - source: 'surbl'
+    path: 'catalog/generated/surbl-return-code-index.yaml'
+    index_type: 'reputation_code_index'
+    count: 7
+    atomic_id_pattern: 'surbl.<label>'
+  - source: 'virustotal_domain'
+    path: 'catalog/generated/virustotal-domain-field-index.yaml'
+    index_type: 'api_field_index'
+    count: 25
+    atomic_id_pattern: 'virustotal_domain.<field>'

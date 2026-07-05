@@ -1,0 +1,275 @@
+schema_version: 1
+kind: domain-score.source-access-policy
+updated: "2026-07-05"
+
+purpose: >
+  Access and cost classification for source catalogs, external tools and public
+  intelligence feeds used by Domain Score. This keeps open-source/free checks
+  separate from optional API-key or paid sources.
+
+access_values:
+  open_source_free: Open-source tool or data that can be run locally for free.
+  free_public_no_key: Public service or endpoint usable without a user API key.
+  free_with_optional_key: Usable in a free tier or with an optional user-provided key.
+  credentials_required: Technically free/open-source, but requires credentials or ownership context for meaningful checks.
+  paid: Requires a paid license, paid feed, paid API tier or enterprise subscription.
+  not_packaged_yet: Identified source is not currently runnable in the tools image.
+
+sources:
+  - id: nuclei
+    title: ProjectDiscovery Nuclei engine
+    access: open_source_free
+    local_runnable: true
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+    included_by_default: false
+    notes:
+      - Engine is open source and runs locally.
+      - Some individual templates may require credentials, tokens, cloud access or explicit authorization; those findings should be marked credentials_required at template/runtime level.
+
+  - id: nuclei_templates
+    title: ProjectDiscovery nuclei-templates snapshot
+    access: open_source_free
+    local_runnable: true
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/nuclei-template-index.yaml
+      - catalog/generated/nuclei-template-summary.yaml
+    included_by_default: false
+    notes:
+      - Template metadata is cataloged as source-specific atomic IDs.
+      - Runtime scanning can be active and remains opt-in.
+
+  - id: subfinder
+    title: ProjectDiscovery subfinder
+    access: open_source_free
+    local_runnable: true
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+      - catalog/generated/subfinder-provider-index.yaml
+    included_by_default: false
+    notes:
+      - Passive sources without keys are usable.
+      - Some subfinder providers support or require API keys; those providers should be marked free_with_optional_key or paid at provider level when configured.
+      - Provider-level source IDs and key requirements are tracked in the generated Subfinder provider index.
+
+  - id: httpx_projectdiscovery
+    title: ProjectDiscovery httpx
+    access: open_source_free
+    local_runnable: false
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+    included_by_default: false
+    notes:
+      - Cataloged capabilities are ProjectDiscovery httpx capabilities.
+      - Current inspected tools image resolves `httpx` to the Python HTTPX CLI wrapper, so the image must be fixed before runtime evidence is reliable.
+
+  - id: naabu
+    title: ProjectDiscovery naabu
+    access: open_source_free
+    local_runnable: true
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+    included_by_default: false
+    notes:
+      - Active port scanning must stay opt-in.
+      - Passive InternetDB mode uses a public no-key endpoint.
+
+  - id: amass
+    title: OWASP Amass
+    access: open_source_free
+    local_runnable: true
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/amass-capability-index.yaml
+      - catalog/generated/amass-provider-index.yaml
+    included_by_default: false
+    notes:
+      - Passive/default enumeration is free.
+      - Some data sources can optionally use API keys; active/bruteforce/AXFR behavior is opt-in/aggressive.
+      - ADS data-source scripts are tracked in the generated Amass provider index.
+
+  - id: zap
+    title: OWASP ZAP add-ons
+    access: open_source_free
+    local_runnable: true
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/zap-rule-index.yaml
+    included_by_default: false
+    notes:
+      - Passive scan rules are safe-mode compatible.
+      - Active scan rules are cataloged but must remain opt-in/aggressive.
+
+  - id: testssl
+    title: testssl.sh
+    access: open_source_free
+    local_runnable: true
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/testssl-jsonid-index.yaml
+    included_by_default: false
+    notes:
+      - Runs locally without API keys.
+      - Performs network TLS probing and should remain opt-in when used beyond basic TLS checks.
+
+  - id: internetnl
+    title: Internet.nl
+    access: open_source_free
+    local_runnable: partial
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/internetnl-subtest-index.yaml
+    included_by_default: false
+    notes:
+      - Source code and stack are open source.
+      - Local full stack is multi-service; current wrapper can also use public web workflow where appropriate.
+
+  - id: greenbone_community_feed
+    title: Greenbone Community Feed
+    access: open_source_free
+    local_runnable: partial
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/greenbone-feed-capability-index.yaml
+      - catalog/generated/greenbone-nvt-index.yaml.gz
+      - catalog/generated/greenbone-notus-advisory-index.yaml.gz
+      - catalog/generated/greenbone-cert-advisory-index.yaml.gz
+      - catalog/generated/greenbone-gvmd-data-object-index.yaml
+      - catalog/generated/greenbone-scap-cve-index.yaml.gz
+    included_by_default: false
+    notes:
+      - Community feed is free to sync and run in a full Greenbone CE stack.
+      - The tools image can run greenbone-feed-sync; NASL, Notus, CERT, GVMD and SCAP feed files are kept outside the repository and generated indexes are built from a synced Community feed cache.
+
+  - id: greenbone_enterprise_feed
+    title: Greenbone Enterprise Feed
+    access: paid
+    local_runnable: false
+    api_key_required: true
+    paid_required: true
+    generated_catalogs:
+      - catalog/generated/greenbone-feed-capability-index.yaml
+    included_by_default: false
+    notes:
+      - Requires a Greenbone Enterprise feed key.
+      - Tracked as paid and not included in free/open-source coverage.
+
+  - id: shodan_internetdb
+    title: Shodan InternetDB
+    access: free_public_no_key
+    local_runnable: false
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/shodan-internetdb-field-index.yaml
+    included_by_default: true
+    notes:
+      - Public no-key endpoint can provide ports, tags, hostnames and CVE hints.
+      - It is not the same as the paid Shodan API.
+
+  - id: shodan_api
+    title: Shodan API
+    access: paid
+    local_runnable: false
+    api_key_required: true
+    paid_required: true
+    generated_catalogs: []
+    included_by_default: false
+    notes:
+      - Full Shodan API is outside free/no-key coverage unless a user provides credentials.
+
+  - id: virustotal_domain_api
+    title: VirusTotal domain API
+    access: free_with_optional_key
+    local_runnable: false
+    api_key_required: true
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/virustotal-domain-field-index.yaml
+    included_by_default: false
+    notes:
+      - Domain Score treats it as optional and reports not_applicable without DOMAIN_SCORE_VIRUSTOTAL_API_KEY.
+      - Free tier availability and rate limits are user/account dependent.
+      - Enterprise-only relationship collections are not included in the generated free/optional-key field catalog.
+
+  - id: spamhaus_dbl
+    title: Spamhaus DBL DNS query
+    access: free_public_no_key
+    local_runnable: false
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/spamhaus-dbl-return-code-index.yaml
+    included_by_default: true
+    notes:
+      - DNS-based public reputation lookup.
+
+  - id: surbl
+    title: SURBL DNS query
+    access: free_public_no_key
+    local_runnable: false
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/surbl-return-code-index.yaml
+    included_by_default: true
+    notes:
+      - DNS-based public reputation lookup.
+
+  - id: urlhaus
+    title: URLhaus host/domain lookup
+    access: free_public_no_key
+    local_runnable: false
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/urlhaus-host-field-index.yaml
+    included_by_default: true
+    notes:
+      - Public malware URL intelligence source.
+
+  - id: ssl_labs
+    title: SSL Labs public API/cache
+    access: free_with_optional_key
+    local_runnable: false
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/ssl-labs-api-field-index.yaml
+    included_by_default: true
+    notes:
+      - Public API/cache can provide external TLS grade evidence; API v4 registration requires an email header, while cache/result usage remains free within SSL Labs terms.
+      - It is a third-party hosted service, not a local open-source tool.
+
+  - id: mozilla_observatory
+    title: Mozilla Observatory
+    access: free_public_no_key
+    local_runnable: false
+    api_key_required: false
+    paid_required: false
+    generated_catalogs:
+      - catalog/generated/mozilla-observatory-expectation-index.yaml
+    included_by_default: true
+    notes:
+      - Public no-key web security assessment source.
+      - The backend analyzer is open source in mdn/mdn-http-observatory.
+
+provider_level_notes:
+  - Provider-specific OSINT sources inside subfinder/Amass may have their own free, key-required or paid terms.
+  - Cloud/security templates that require account credentials are cataloged as source capabilities, but runtime execution must be explicitly configured by the user.
+  - Paid sources are kept as optional metadata and must not be required for the default free/open-source audit path.

@@ -1,0 +1,198 @@
+schema_version: 1
+kind: domain-score.source-mapping-coverage
+generated_at: "2026-07-05"
+canonical_checks: 299
+source_items: 629357
+mapping_rules: 558
+coverage_by_source:
+  amass:
+    total: 114
+    mapped: 114
+    unmapped: 0
+    unmapped_examples:
+      []
+  greenbone:
+    total: 615291
+    mapped: 615291
+    unmapped: 0
+    unmapped_examples:
+      []
+  internetnl:
+    total: 76
+    mapped: 76
+    unmapped: 0
+    unmapped_examples:
+      []
+  mozilla_observatory:
+    total: 66
+    mapped: 66
+    unmapped: 0
+    unmapped_examples:
+      []
+  nuclei:
+    total: 13375
+    mapped: 13375
+    unmapped: 0
+    unmapped_examples:
+      []
+  projectdiscovery:
+    total: 43
+    mapped: 43
+    unmapped: 0
+    unmapped_examples:
+      []
+  shodan_internetdb:
+    total: 6
+    mapped: 6
+    unmapped: 0
+    unmapped_examples:
+      []
+  spamhaus_dbl:
+    total: 13
+    mapped: 13
+    unmapped: 0
+    unmapped_examples:
+      []
+  ssl_labs:
+    total: 64
+    mapped: 64
+    unmapped: 0
+    unmapped_examples:
+      []
+  subfinder:
+    total: 50
+    mapped: 50
+    unmapped: 0
+    unmapped_examples:
+      []
+  surbl:
+    total: 7
+    mapped: 7
+    unmapped: 0
+    unmapped_examples:
+      []
+  testssl:
+    total: 107
+    mapped: 107
+    unmapped: 0
+    unmapped_examples:
+      []
+  urlhaus_host:
+    total: 16
+    mapped: 16
+    unmapped: 0
+    unmapped_examples:
+      []
+  virustotal_domain:
+    total: 25
+    mapped: 25
+    unmapped: 0
+    unmapped_examples:
+      []
+  zap:
+    total: 104
+    mapped: 104
+    unmapped: 0
+    unmapped_examples:
+      []
+top_canonical_targets:
+  - canonical_id: "greenbone.scap_cve_metadata"
+    mapped_source_items: 363055
+  - canonical_id: "greenbone.vendor_security_advisory_check"
+    mapped_source_items: 150342
+  - canonical_id: "greenbone.dfn_cert_advisory"
+    mapped_source_items: 43085
+  - canonical_id: "greenbone.cert_bund_advisory"
+    mapped_source_items: 27316
+  - canonical_id: "greenbone.web_application_vulnerability"
+    mapped_source_items: 9593
+  - canonical_id: "greenbone.general_nvt_security_check"
+    mapped_source_items: 8918
+  - canonical_id: "vulnerability.known_cve_detected"
+    mapped_source_items: 4257
+  - canonical_id: "greenbone.product_detection"
+    mapped_source_items: 3304
+  - canonical_id: "greenbone.denial_of_service_check"
+    mapped_source_items: 2405
+  - canonical_id: "greenbone.policy_or_compliance_check"
+    mapped_source_items: 1611
+  - canonical_id: "nuclei.exposed_panel"
+    mapped_source_items: 1513
+  - canonical_id: "greenbone.database_security_check"
+    mapped_source_items: 1200
+  - canonical_id: "nuclei.web_vulnerability_signal"
+    mapped_source_items: 1184
+  - canonical_id: "greenbone.network_device_security_check"
+    mapped_source_items: 1135
+  - canonical_id: "nuclei.osint_public_exposure"
+    mapped_source_items: 1078
+  - canonical_id: "greenbone.web_server_security_check"
+    mapped_source_items: 1047
+  - canonical_id: "nuclei.http_misconfiguration"
+    mapped_source_items: 978
+  - canonical_id: "nuclei.technology_detection"
+    mapped_source_items: 896
+  - canonical_id: "nuclei.file_secret_exposure"
+    mapped_source_items: 859
+  - canonical_id: "greenbone.buffer_overflow_or_memory_corruption"
+    mapped_source_items: 682
+  - canonical_id: "greenbone.remote_file_or_service_abuse"
+    mapped_source_items: 680
+  - canonical_id: "nuclei.cloud_misconfiguration"
+    mapped_source_items: 663
+  - canonical_id: "nuclei.code_static_vulnerability"
+    mapped_source_items: 345
+  - canonical_id: "greenbone.default_account_check"
+    mapped_source_items: 320
+  - canonical_id: "greenbone.privilege_escalation_check"
+    mapped_source_items: 316
+  - canonical_id: "nuclei.default_login_or_credential"
+    mapped_source_items: 311
+  - canonical_id: "nuclei.token_spray_or_credential_attack"
+    mapped_source_items: 261
+  - canonical_id: "nuclei.workflow_product_bundle"
+    mapped_source_items: 207
+  - canonical_id: "nuclei.malware_or_webshell_indicator"
+    mapped_source_items: 193
+  - canonical_id: "greenbone.malware_or_compromise_check"
+    mapped_source_items: 167
+  - canonical_id: "nuclei.network_detection"
+    mapped_source_items: 154
+  - canonical_id: "inventory.subdomain_source_attribution"
+    mapped_source_items: 148
+  - canonical_id: "greenbone.tls_or_crypto_check"
+    mapped_source_items: 83
+  - canonical_id: "takeover.dangling_dns_or_saas"
+    mapped_source_items: 76
+  - canonical_id: "nuclei.iot_exposure"
+    mapped_source_items: 64
+  - canonical_id: "nuclei.miscellaneous_public_signal"
+    mapped_source_items: 58
+  - canonical_id: "nuclei.file_configuration_audit"
+    mapped_source_items: 51
+  - canonical_id: "nuclei.known_advisory_template"
+    mapped_source_items: 44
+  - canonical_id: "inventory.tool_capability_metadata"
+    mapped_source_items: 38
+  - canonical_id: "tls.known_protocol_vulnerability"
+    mapped_source_items: 38
+  - canonical_id: "nuclei.dns_template_signal"
+    mapped_source_items: 28
+  - canonical_id: "nuclei.android_static_analysis"
+    mapped_source_items: 25
+  - canonical_id: "nuclei.c2_or_hostile_infrastructure_indicator"
+    mapped_source_items: 22
+  - canonical_id: "standards.internetnl_web_https"
+    mapped_source_items: 22
+  - canonical_id: "standards.internetnl_mail_starttls_dane"
+    mapped_source_items: 19
+  - canonical_id: "nuclei.honeypot_detected"
+    mapped_source_items: 18
+  - canonical_id: "nuclei.jarm_fingerprint"
+    mapped_source_items: 16
+  - canonical_id: "nuclei.network_misconfiguration"
+    mapped_source_items: 16
+  - canonical_id: "compliance.greenbone_policy_match"
+    mapped_source_items: 15
+  - canonical_id: "http.csp_missing_or_weak"
+    mapped_source_items: 13

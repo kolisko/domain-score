@@ -1,0 +1,93 @@
+schema_version: 1
+kind: domain-score.nuclei-template-summary
+generated_from: ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a
+generated_at: "2026-07-05"
+nuclei_version: v3.10.0
+templates_count_observed: 13419
+templates_indexed: 13375
+generated_index: catalog/generated/nuclei-template-index.yaml
+
+notes:
+  - This is a source snapshot summary for product catalog planning.
+  - It is not the runtime scan result.
+  - Concrete template IDs should become source-specific atomic checks only when
+    a template represents one distinct vulnerability, exposure, takeover,
+    misconfiguration or inventory condition.
+  - Runtime matches are findings under the corresponding atomic check.
+
+top_level_groups:
+  http: 11024
+  cloud: 663
+  file: 447
+  code: 288
+  network: 280
+  dast: 249
+  workflows: 207
+  javascript: 125
+  ssl: 38
+  dns: 31
+  headless: 24
+
+severity_counts:
+  info: 5049
+  high: 2923
+  medium: 2808
+  critical: 1825
+  low: 505
+  unknown: 58
+
+http_groups:
+  cves: 4104
+  exposed-panels: 1513
+  osint: 1078
+  misconfiguration: 978
+  vulnerabilities: 942
+  technologies: 895
+  exposures: 696
+  default-logins: 301
+  token-spray: 247
+  takeovers: 73
+  iot: 64
+  miscellaneous: 55
+  cnvd: 44
+  credential-stuffing: 14
+  fuzzing: 12
+  honeypot: 5
+  global-matchers: 3
+
+network_file_ssl_groups:
+  file/malware: 190
+  file/keys: 156
+  network/detection: 154
+  network/cves: 57
+  file/audit: 51
+  file/android: 25
+  ssl/c2: 17
+  network/misconfig: 16
+  network/jarm: 16
+  network/honeypot: 13
+  ssl/fortinet: 8
+  network/enumeration: 8
+  network/exposures: 7
+  file/logs: 7
+  file/nodejs: 6
+  network/c2: 5
+  file/webshell: 3
+  network/default-login: 2
+
+catalog_mapping:
+  http/cves: vulnerability.known_cve_detected
+  http/exposed-panels: nuclei.exposed_panel
+  http/misconfiguration: vulnerability.nuclei_template_match
+  http/vulnerabilities: vulnerability.nuclei_template_match
+  http/exposures: nuclei.file_secret_exposure
+  http/default-logins: nuclei.default_login_or_credential
+  http/takeovers: takeover.dangling_dns_or_saas
+  file/keys: nuclei.file_secret_exposure
+  file/logs: nuclei.file_secret_exposure
+  file/malware: nuclei.malware_or_webshell_indicator
+  file/webshell: nuclei.malware_or_webshell_indicator
+  network/default-login: nuclei.default_login_or_credential
+  network/cves: vulnerability.known_cve_detected
+  network/misconfig: vulnerability.nuclei_template_match
+  ssl: tls.known_protocol_vulnerability

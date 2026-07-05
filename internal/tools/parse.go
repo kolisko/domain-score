@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/kolisko/domain-score/internal/audit"
+	"github.com/kolisko/domain-score/internal/catalog"
 )
 
 func ParseCache(cacheDir string) ([]audit.ToolFinding, []string) {
@@ -43,6 +44,7 @@ func ParseCache(cacheDir string) ([]audit.ToolFinding, []string) {
 		}
 		findings = append(findings, got...)
 	}
+	normalizeWithCatalog(findings)
 	return findings, errors
 }
 
@@ -78,14 +80,16 @@ func parseSubfinder(path string) ([]audit.ToolFinding, error) {
 			return audit.ToolFinding{}, false
 		}
 		return audit.ToolFinding{
-			Source:   "external_tool",
-			Tool:     "subfinder",
-			Asset:    host,
-			Type:     "subdomain",
-			Severity: "info",
-			Title:    "Discovered subdomain",
-			Evidence: raw,
-			RawFile:  path,
+			Source:        "external_tool",
+			Tool:          "subfinder",
+			Asset:         host,
+			Type:          "subdomain",
+			AtomicCheckID: "inventory.subdomains",
+			SourceRuleID:  "projectdiscovery.subfinder.passive-subdomain-discovery",
+			Severity:      "info",
+			Title:         "Discovered subdomain",
+			Evidence:      raw,
+			RawFile:       path,
 		}, true
 	})
 }
@@ -104,14 +108,16 @@ func parseHTTPX(path string) ([]audit.ToolFinding, error) {
 			title = fmt.Sprintf("HTTP service detected (%d)", status)
 		}
 		return audit.ToolFinding{
-			Source:   "external_tool",
-			Tool:     "httpx",
-			Asset:    url,
-			Type:     "http_service",
-			Severity: "info",
-			Title:    title,
-			Evidence: raw,
-			RawFile:  path,
+			Source:        "external_tool",
+			Tool:          "httpx",
+			Asset:         url,
+			Type:          "http_service",
+			AtomicCheckID: "inventory.http_services",
+			SourceRuleID:  "projectdiscovery.httpx.http-service-probing",
+			Severity:      "info",
+			Title:         title,
+			Evidence:      raw,
+			RawFile:       path,
 		}, true
 	})
 }
@@ -132,6 +138,8 @@ func parseNaabu(path string) ([]audit.ToolFinding, error) {
 			Tool:           "naabu",
 			Asset:          fmt.Sprintf("%s:%d", host, port),
 			Type:           "open_port",
+			AtomicCheckID:  "network.open_ports",
+			SourceRuleID:   "projectdiscovery.naabu.port-scan",
 			Severity:       severity,
 			Title:          fmt.Sprintf("Open port %d", port),
 			Evidence:       raw,
@@ -155,16 +163,23 @@ func parseNuclei(path string) ([]audit.ToolFinding, error) {
 		if severity == "" {
 			severity = "info"
 		}
+		templateID := stringValue(raw, "template-id")
+		sourceRuleID := ""
+		if templateID != "" {
+			sourceRuleID = "nuclei." + templateID
+		}
 		return audit.ToolFinding{
-			Source:         "external_tool",
-			Tool:           "nuclei",
-			Asset:          stringValue(raw, "matched-at"),
-			Type:           stringValue(raw, "template-id"),
-			Severity:       severity,
-			Title:          title,
-			Evidence:       raw,
-			Recommendation: "Ověřte nález proti cílové službě a aplikujte doporučení z Nuclei šablony nebo vendor dokumentace.",
-			RawFile:        path,
+			Source:          "external_tool",
+			Tool:            "nuclei",
+			Asset:           stringValue(raw, "matched-at"),
+			Type:            templateID,
+			SourceRuleID:    sourceRuleID,
+			SourceRuleGroup: nucleiGroup(raw),
+			Severity:        severity,
+			Title:           title,
+			Evidence:        raw,
+			Recommendation:  "Ověřte nález proti cílové službě a aplikujte doporučení z Nuclei šablony nebo vendor dokumentace.",
+			RawFile:         path,
 		}, true
 	})
 }
@@ -176,14 +191,16 @@ func parseAmass(path string) ([]audit.ToolFinding, error) {
 			return audit.ToolFinding{}, false
 		}
 		return audit.ToolFinding{
-			Source:   "external_tool",
-			Tool:     "amass",
-			Asset:    name,
-			Type:     "subdomain",
-			Severity: "info",
-			Title:    "Discovered attack-surface name",
-			Evidence: raw,
-			RawFile:  path,
+			Source:        "external_tool",
+			Tool:          "amass",
+			Asset:         name,
+			Type:          "subdomain",
+			AtomicCheckID: "inventory.subdomains",
+			SourceRuleID:  "amass.enum.passive-enumeration",
+			Severity:      "info",
+			Title:         "Discovered attack-surface name",
+			Evidence:      raw,
+			RawFile:       path,
 		}, true
 	})
 }
@@ -203,14 +220,16 @@ func parseAmassText(path string) ([]audit.ToolFinding, error) {
 			continue
 		}
 		out = append(out, audit.ToolFinding{
-			Source:   "external_tool",
-			Tool:     "amass",
-			Asset:    name,
-			Type:     "subdomain",
-			Severity: "info",
-			Title:    "Discovered attack-surface name",
-			Evidence: map[string]any{"name": name},
-			RawFile:  path,
+			Source:        "external_tool",
+			Tool:          "amass",
+			Asset:         name,
+			Type:          "subdomain",
+			AtomicCheckID: "inventory.subdomains",
+			SourceRuleID:  "amass.enum.passive-enumeration",
+			Severity:      "info",
+			Title:         "Discovered attack-surface name",
+			Evidence:      map[string]any{"name": name},
+			RawFile:       path,
 		})
 	}
 	return out, scanner.Err()
@@ -237,11 +256,17 @@ func parseZAP(path string) ([]audit.ToolFinding, error) {
 			if title == "" {
 				title = "ZAP baseline alert"
 			}
+			pluginID := stringValue(alert, "pluginid")
+			sourceRuleID := ""
+			if pluginID != "" {
+				sourceRuleID = "zap." + pluginID
+			}
 			out = append(out, audit.ToolFinding{
 				Source:         "external_tool",
 				Tool:           "zap",
 				Asset:          stringValue(alert, "url"),
-				Type:           stringValue(alert, "pluginid"),
+				Type:           pluginID,
+				SourceRuleID:   sourceRuleID,
 				Severity:       severity,
 				Title:          title,
 				Evidence:       alert,
@@ -273,6 +298,7 @@ func parseTestSSL(path string) ([]audit.ToolFinding, error) {
 			Tool:           "testssl",
 			Asset:          stringValue(row, "ip"),
 			Type:           id,
+			SourceRuleID:   "testssl." + id,
 			Severity:       normalizeSeverity(severity),
 			Title:          firstNonEmpty(stringValue(row, "finding"), id),
 			Evidence:       row,
@@ -309,8 +335,79 @@ func parseSimpleToolJSON(tool string) func(string) ([]audit.ToolFinding, error) 
 		if row.Tool == "" {
 			row.Tool = tool
 		}
+		if row.SourceRuleID == "" && row.Type != "" {
+			row.SourceRuleID = tool + "." + row.Type
+		}
 		return []audit.ToolFinding{row}, nil
 	}
+}
+
+func normalizeWithCatalog(findings []audit.ToolFinding) {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		return
+	}
+	for i := range findings {
+		if findings[i].AtomicCheckID != "" {
+			continue
+		}
+		source := catalogSource(findings[i].Tool)
+		if source == "" || findings[i].SourceRuleID == "" {
+			continue
+		}
+		if match, ok := cat.Resolver.Resolve(source, findings[i].SourceRuleID, findings[i].SourceRuleGroup); ok {
+			findings[i].AtomicCheckID = match.CanonicalID
+			findings[i].MappingConfidence = match.Confidence
+		}
+	}
+}
+
+func catalogSource(tool string) string {
+	switch tool {
+	case "nuclei":
+		return "nuclei"
+	case "zap":
+		return "zap"
+	case "testssl":
+		return "testssl"
+	case "subfinder", "httpx", "naabu":
+		return "projectdiscovery"
+	case "amass":
+		return "amass"
+	case "internetnl":
+		return "internetnl"
+	case "greenbone":
+		return "greenbone"
+	default:
+		return tool
+	}
+}
+
+func nucleiGroup(raw map[string]any) string {
+	path := firstNonEmpty(
+		stringValue(raw, "template-path"),
+		stringValue(raw, "template-url"),
+		stringValue(raw, "template"),
+	)
+	path = strings.ReplaceAll(path, "\\", "/")
+	if path == "" {
+		return ""
+	}
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		switch part {
+		case "http", "network", "cloud", "file", "code", "javascript", "headless", "dast", "ssl", "dns":
+			end := i + 2
+			if end > len(parts) {
+				end = len(parts)
+			}
+			return strings.Join(parts[i:end], "/")
+		}
+	}
+	if len(parts) >= 2 {
+		return strings.Join(parts[:2], "/")
+	}
+	return strings.TrimSuffix(path, ".yaml")
 }
 
 func parseJSONLines(path string, convert func(map[string]any) (audit.ToolFinding, bool)) ([]audit.ToolFinding, error) {

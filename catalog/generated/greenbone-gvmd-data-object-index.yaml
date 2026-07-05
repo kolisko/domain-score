@@ -1,0 +1,285 @@
+schema_version: 1
+kind: domain-score.greenbone-gvmd-data-object-index
+generated_from: 'ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a'
+generated_at: "2026-07-05"
+objects_indexed: 23
+notes:
+  - Source-specific atomic IDs use greenbone.scan-config.<uuid>, greenbone.port-list.<uuid> and greenbone.report-format.<uuid>.
+  - Scan configs can represent scan policy/compliance capabilities; port lists and report formats are scan/report metadata.
+objects:
+  - atomic_id: 'greenbone.port-list.33d0cd82-57c6-11e1-8ed1-406186ea4fc5'
+    object_id: '33d0cd82-57c6-11e1-8ed1-406186ea4fc5'
+    object_type: 'port-list'
+    title: 'All IANA assigned TCP'
+    category: 'scan_control'
+    usage_type: ''
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 841
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/port-lists/all-iana-assigned-tcp-33d0cd82-57c6-11e1-8ed1-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.port-list.4a4717fe-57d2-11e1-9a26-406186ea4fc5'
+    object_id: '4a4717fe-57d2-11e1-9a26-406186ea4fc5'
+    object_type: 'port-list'
+    title: 'All IANA assigned TCP and UDP'
+    category: 'scan_control'
+    usage_type: ''
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 1618
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/port-lists/all-iana-assigned-tcp-and-udp-4a4717fe-57d2-11e1-9a26-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.port-list.730ef368-57e2-11e1-a90f-406186ea4fc5'
+    object_id: '730ef368-57e2-11e1-a90f-406186ea4fc5'
+    object_type: 'port-list'
+    title: 'All TCP and Nmap top 100 UDP'
+    category: 'scan_control'
+    usage_type: ''
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 68
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/port-lists/all-tcp-and-nmap-top-100-udp-730ef368-57e2-11e1-a90f-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.report-format.5057e5cc-b825-11e4-9d0e-28d24461215b'
+    object_id: '5057e5cc-b825-11e4-9d0e-28d24461215b'
+    object_type: 'report-format'
+    title: 'Anonymous XML'
+    category: 'reporting'
+    usage_type: 'all'
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 0
+    extension: 'xml'
+    content_type: 'text/xml'
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/report-formats/anonymous-xml-5057e5cc-b825-11e4-9d0e-28d24461215b.xml'
+  - atomic_id: 'greenbone.report-format.77bd6c4a-1f62-11e1-abf0-406186ea4fc5'
+    object_id: '77bd6c4a-1f62-11e1-abf0-406186ea4fc5'
+    object_type: 'report-format'
+    title: 'ITG'
+    category: 'reporting'
+    usage_type: 'scan'
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 0
+    extension: 'csv'
+    content_type: 'text/csv'
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/report-formats/itg-77bd6c4a-1f62-11e1-abf0-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.report-format.a3810a62-1f62-11e1-9219-406186ea4fc5'
+    object_id: 'a3810a62-1f62-11e1-9219-406186ea4fc5'
+    object_type: 'report-format'
+    title: 'TXT'
+    category: 'reporting'
+    usage_type: 'all'
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 0
+    extension: 'txt'
+    content_type: 'text/plain'
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/report-formats/txt-a3810a62-1f62-11e1-9219-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.report-format.a994b278-1f62-11e1-96ac-406186ea4fc5'
+    object_id: 'a994b278-1f62-11e1-96ac-406186ea4fc5'
+    object_type: 'report-format'
+    title: 'XML'
+    category: 'reporting'
+    usage_type: 'all'
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 0
+    extension: 'xml'
+    content_type: 'text/xml'
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/report-formats/xml-a994b278-1f62-11e1-96ac-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.report-format.c1645568-627a-11e3-a660-406186ea4fc5'
+    object_id: 'c1645568-627a-11e3-a660-406186ea4fc5'
+    object_type: 'report-format'
+    title: 'CSV Results'
+    category: 'reporting'
+    usage_type: 'scan'
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 0
+    extension: 'csv'
+    content_type: 'text/csv'
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/report-formats/csv-results-c1645568-627a-11e3-a660-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.report-format.c402cc3e-b531-11e1-9163-406186ea4fc5'
+    object_id: 'c402cc3e-b531-11e1-9163-406186ea4fc5'
+    object_type: 'report-format'
+    title: 'PDF'
+    category: 'reporting'
+    usage_type: 'all'
+    selector_count: 0
+    preference_count: 0
+    port_range_count: 0
+    extension: 'pdf'
+    content_type: 'application/pdf'
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/report-formats/pdf-c402cc3e-b531-11e1-9163-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.scan-config.0362e8f6-d7cc-4a12-8768-5f2406713860'
+    object_id: '0362e8f6-d7cc-4a12-8768-5f2406713860'
+    object_type: 'scan-config'
+    title: 'EulerOS Linux Security Configuration'
+    category: 'scan_control'
+    usage_type: 'policy'
+    selector_count: 157
+    preference_count: 1866
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/policy_euleros_20200909_0362e8f6-d7cc-4a12-8768-5f2406713860.xml'
+  - atomic_id: 'greenbone.scan-config.085569ce-73ed-11df-83c3-002264764cea'
+    object_id: '085569ce-73ed-11df-83c3-002264764cea'
+    object_type: 'scan-config'
+    title: 'empty'
+    category: 'scan_control'
+    usage_type: 'scan'
+    selector_count: 0
+    preference_count: 2
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/empty-085569ce-73ed-11df-83c3-002264764cea.xml'
+  - atomic_id: 'greenbone.scan-config.2d3f051c-55ba-11e3-bf43-406186ea4fc5'
+    object_id: '2d3f051c-55ba-11e3-bf43-406186ea4fc5'
+    object_type: 'scan-config'
+    title: 'Host Discovery'
+    category: 'scan_control'
+    usage_type: 'scan'
+    selector_count: 2
+    preference_count: 4
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/host-discovery-2d3f051c-55ba-11e3-bf43-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.scan-config.2eec8313-fee4-442a-b3c4-fa0d5dc83d61'
+    object_id: '2eec8313-fee4-442a-b3c4-fa0d5dc83d61'
+    object_type: 'scan-config'
+    title: 'GaussDB Kernel V500R001C00 Security Hardening Guide'
+    category: 'scan_control'
+    usage_type: 'policy'
+    selector_count: 105
+    preference_count: 1935
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/policy-gaussdbkernel-2eec8313-fee4-442a-b3c4-fa0d5dc83d61.xml'
+  - atomic_id: 'greenbone.scan-config.61327f09-8a54-4854-9e1c-16798285fb28'
+    object_id: '61327f09-8a54-4854-9e1c-16798285fb28'
+    object_type: 'scan-config'
+    title: 'GaussDB 100 V300R001C00 Security Hardening Guide (Standalone)'
+    category: 'scan_control'
+    usage_type: 'policy'
+    selector_count: 57
+    preference_count: 1866
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/policy_gaussdb_20200909_61327f09-8a54-4854-9e1c-16798285fb28.xml'
+  - atomic_id: 'greenbone.scan-config.837fe3a1-e620-46d3-a594-7d068615375a'
+    object_id: '837fe3a1-e620-46d3-a594-7d068615375a'
+    object_type: 'scan-config'
+    title: 'EulerOS/EulerOS Virtual/HCE/openEuler Linux Security Configuration'
+    category: 'scan_control'
+    usage_type: 'policy'
+    selector_count: 196
+    preference_count: 36
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/euleros-euleros-virtual-hce-openeuler-linux-security-configuration-837fe3a1-e620-46d3-a594-7d068615375a.xml'
+  - atomic_id: 'greenbone.scan-config.8715c877-47a0-438d-98a3-27c7a6ab2196'
+    object_id: '8715c877-47a0-438d-98a3-27c7a6ab2196'
+    object_type: 'scan-config'
+    title: 'Discovery'
+    category: 'scan_control'
+    usage_type: 'scan'
+    selector_count: 306
+    preference_count: 3
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/discovery-8715c877-47a0-438d-98a3-27c7a6ab2196.xml'
+  - atomic_id: 'greenbone.scan-config.aab5c4a1-eab1-4f4e-acac-8c36d08de6bc'
+    object_id: 'aab5c4a1-eab1-4f4e-acac-8c36d08de6bc'
+    object_type: 'scan-config'
+    title: 'Huawei Datacom Product Security Configuration Audit Guide'
+    category: 'scan_control'
+    usage_type: 'policy'
+    selector_count: 57
+    preference_count: 19
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/policy-huawei-datacom-aab5c4a1-eab1-4f4e-acac-8c36d08de6bc.xml'
+  - atomic_id: 'greenbone.scan-config.bbca7412-a950-11e3-9109-406186ea4fc5'
+    object_id: 'bbca7412-a950-11e3-9109-406186ea4fc5'
+    object_type: 'scan-config'
+    title: 'System Discovery'
+    category: 'scan_control'
+    usage_type: 'scan'
+    selector_count: 30
+    preference_count: 1
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/system-discovery-bbca7412-a950-11e3-9109-406186ea4fc5.xml'
+  - atomic_id: 'greenbone.scan-config.c2b049f9-6d3d-45be-871f-2252895ed9e8'
+    object_id: 'c2b049f9-6d3d-45be-871f-2252895ed9e8'
+    object_type: 'scan-config'
+    title: 'openGauss Security Hardening Guide'
+    category: 'scan_control'
+    usage_type: 'policy'
+    selector_count: 95
+    preference_count: 1935
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/policy-opengauss-c2b049f9-6d3d-45be-871f-2252895ed9e8.xml'
+  - atomic_id: 'greenbone.scan-config.c4b7c0cb-6502-4809-b034-8e635311b3e6'
+    object_id: 'c4b7c0cb-6502-4809-b034-8e635311b3e6'
+    object_type: 'scan-config'
+    title: 'IT-Grundschutz Kompendium'
+    category: 'scan_control'
+    usage_type: 'policy'
+    selector_count: 72
+    preference_count: 1951
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/policy-it-grundschutz-c4b7c0cb-6502-4809-b034-8e635311b3e6.xml'
+  - atomic_id: 'greenbone.scan-config.d21f6c81-2b88-4ac1-b7b4-a2a9f2ad4663'
+    object_id: 'd21f6c81-2b88-4ac1-b7b4-a2a9f2ad4663'
+    object_type: 'scan-config'
+    title: 'Base'
+    category: 'scan_control'
+    usage_type: 'scan'
+    selector_count: 3
+    preference_count: 0
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/base-d21f6c81-2b88-4ac1-b7b4-a2a9f2ad4663.xml'
+  - atomic_id: 'greenbone.scan-config.daba56c8-73ec-11df-a475-002264764cea'
+    object_id: 'daba56c8-73ec-11df-a475-002264764cea'
+    object_type: 'scan-config'
+    title: 'Full and fast'
+    category: 'scan_control'
+    usage_type: 'scan'
+    selector_count: 6
+    preference_count: 2
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/full-and-fast-daba56c8-73ec-11df-a475-002264764cea.xml'
+  - atomic_id: 'greenbone.scan-config.e3efebc5-fc0d-4cb6-b1b4-55309d0a89f6'
+    object_id: 'e3efebc5-fc0d-4cb6-b1b4-55309d0a89f6'
+    object_type: 'scan-config'
+    title: 'Log4Shell'
+    category: 'scan_control'
+    usage_type: 'scan'
+    selector_count: 72
+    preference_count: 1970
+    port_range_count: 0
+    extension: ''
+    content_type: ''
+    source_path: '/greenbone-feed/gvm/data-objects/gvmd/scan-configs/log4j-vulnerabilities_e3efebc5-fc0d-4cb6-b1b4-55309d0a89f6.xml'

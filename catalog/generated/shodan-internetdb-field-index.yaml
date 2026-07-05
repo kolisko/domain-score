@@ -1,0 +1,27 @@
+schema_version: 1
+kind: domain-score.shodan-internetdb-field-index
+generated_from: 'https://internetdb.shodan.io/'
+generated_at: "2026-07-05"
+notes:
+  - 'Source-specific atomic IDs use shodan_internetdb.<field>.'
+  - 'InternetDB is a public no-key Shodan endpoint for non-commercial use; enterprise license is required for commercial use.'
+  - 'The public API returns open ports, CPEs, hostnames, tags and vulnerabilities but not service banners.'
+fields:
+  - atomic_id: 'shodan_internetdb.ip'
+    field: 'ip'
+    title: 'Queried IP address'
+  - atomic_id: 'shodan_internetdb.ports'
+    field: 'ports'
+    title: 'Observed open TCP ports'
+  - atomic_id: 'shodan_internetdb.cpes'
+    field: 'cpes'
+    title: 'Observed CPE software identifiers'
+  - atomic_id: 'shodan_internetdb.hostnames'
+    field: 'hostnames'
+    title: 'Hostnames associated with the IP'
+  - atomic_id: 'shodan_internetdb.tags'
+    field: 'tags'
+    title: 'Shodan InternetDB classification tags'
+  - atomic_id: 'shodan_internetdb.vulns'
+    field: 'vulns'
+    title: 'CVE identifiers inferred from service metadata'

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kolisko/domain-score/internal/audit"
+	"github.com/kolisko/domain-score/internal/store"
 )
 
 type DockerRunner struct {
@@ -231,11 +232,8 @@ func cleanupContainer(cidFile string) {
 
 func prepareCacheDir(base string, domain string) (string, error) {
 	if base == "" {
-		userCache, err := os.UserCacheDir()
-		if err != nil {
-			return "", err
-		}
-		base = filepath.Join(userCache, "domain-score", "tools")
+		runDir, _, err := store.NewRunDir(domain)
+		return runDir, err
 	}
 	cacheDir := filepath.Join(base, safePathPart(domain), "latest")
 	if err := os.RemoveAll(cacheDir); err != nil {

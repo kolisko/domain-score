@@ -17,9 +17,9 @@ func TestParseCacheParsesToolOutputs(t *testing.T) {
 	writeTestFile(t, filepath.Join(raw, "subfinder.jsonl"), `{"host":"app.example.com"}`+"\n")
 	writeTestFile(t, filepath.Join(raw, "httpx.jsonl"), `{"url":"https://app.example.com","status_code":200}`+"\n")
 	writeTestFile(t, filepath.Join(raw, "naabu.jsonl"), `{"host":"app.example.com","port":22}`+"\n")
-	writeTestFile(t, filepath.Join(raw, "nuclei.jsonl"), `{"template-id":"cve-test","matched-at":"https://app.example.com","info":{"name":"Test CVE","severity":"high"}}`+"\n")
+	writeTestFile(t, filepath.Join(raw, "nuclei.jsonl"), `{"template-id":"cve-test","template-path":"http/cves/2024/cve-test.yaml","matched-at":"https://app.example.com","info":{"name":"Test CVE","severity":"high"}}`+"\n")
 	writeTestFile(t, filepath.Join(raw, "amass.txt"), "admin.example.com\n")
-	writeTestFile(t, filepath.Join(raw, "zap.json"), `{"site":[{"alerts":[{"alert":"Missing Header","riskdesc":"Medium","url":"https://app.example.com","solution":"Add header"}]}]}`)
+	writeTestFile(t, filepath.Join(raw, "zap.json"), `{"site":[{"alerts":[{"alert":"Cookie HttpOnly","riskdesc":"Medium","url":"https://app.example.com","pluginid":"10010","solution":"Add header"}]}]}`)
 	writeTestFile(t, filepath.Join(raw, "internetnl.json"), `[{"tool":"internetnl","title":"Internet.nl score","severity":"info"}]`)
 
 	findings, errors := ParseCache(cache)
@@ -31,6 +31,12 @@ func TestParseCacheParsesToolOutputs(t *testing.T) {
 	}
 	if findings[3].Tool != "nuclei" || findings[3].Severity != "high" {
 		t.Fatalf("unexpected nuclei finding: %#v", findings[3])
+	}
+	if findings[3].AtomicCheckID != "vulnerability.known_cve_detected" {
+		t.Fatalf("nuclei atomic_check_id = %q", findings[3].AtomicCheckID)
+	}
+	if findings[5].AtomicCheckID != "http.cookie_missing_httponly" {
+		t.Fatalf("zap atomic_check_id = %q", findings[5].AtomicCheckID)
 	}
 }
 
@@ -173,7 +179,7 @@ func ParseCacheWithFixture(t *testing.T, cache string) (audit.ToolObservation, [
 	if err := os.MkdirAll(raw, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writeTestFile(t, filepath.Join(raw, "nuclei.jsonl"), `{"template-id":"cve-test","matched-at":"https://app.example.com","info":{"name":"Test CVE","severity":"high"}}`+"\n")
+	writeTestFile(t, filepath.Join(raw, "nuclei.jsonl"), `{"template-id":"cve-test","template-path":"http/cves/2024/cve-test.yaml","matched-at":"https://app.example.com","info":{"name":"Test CVE","severity":"high"}}`+"\n")
 	findings, errors := ParseCache(cache)
 	return audit.ToolObservation{Enabled: true, Findings: findings}, errors
 }

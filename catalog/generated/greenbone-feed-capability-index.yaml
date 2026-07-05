@@ -1,0 +1,49 @@
+schema_version: 1
+kind: domain-score.greenbone-feed-capability-index
+generated_from: 'ghcr.io/kolisko/domain-score-tools@sha256:013b814b66d07c5ce9703892d9b0434c35fdbe1e4c9b49d104ab7776ef057f7a'
+generated_at: "2026-07-05"
+greenbone_feed_sync_available: true
+gvm_cli_available: true
+rsync_available: true
+local_nasl_files_observed: 95090
+notes:
+  - Local NASL/NVT feed data was observed and can be indexed into greenbone.nvt.<oid> source checks.
+  - Community feed streams are open-source/free to run after feed sync; Enterprise feed requires a paid key and is marked paid.
+  - Source-specific NVT atomic IDs should use greenbone.nvt.<oid> once NASL metadata is available.
+feed_streams:
+  - stream: 'nvt'
+    title: 'NASL vulnerability tests'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.nvt.<oid>'
+  - stream: 'notus'
+    title: 'Notus package vulnerability data'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.notus.<advisory-or-cve>'
+  - stream: 'scap'
+    title: 'SCAP/CVE/CPE data'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.scap.<cve-or-cpe>'
+  - stream: 'cert'
+    title: 'CERT-Bund and DFN-CERT advisory data'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.cert.<advisory-id>'
+  - stream: 'gvmd-data'
+    title: 'GVMD data objects'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.data-object.<id>'
+  - stream: 'scan-config'
+    title: 'Scan configuration definitions'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.scan-config.<id>'
+  - stream: 'port-list'
+    title: 'Port list definitions'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.port-list.<id>'
+  - stream: 'report-format'
+    title: 'Report format definitions'
+    access: 'community_free'
+    atomic_id_pattern: 'greenbone.report-format.<id>'
+  - stream: 'enterprise-feed'
+    title: 'Greenbone Enterprise Feed'
+    access: 'paid'
+    atomic_id_pattern: 'greenbone.enterprise.<id>'

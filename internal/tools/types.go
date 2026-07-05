@@ -88,7 +88,7 @@ func ExpandList(raw string) ([]string, error) {
 	for _, part := range parts {
 		expanded, ok := aliases[part]
 		if !ok {
-			if !isKnownTool(part) {
+			if !IsKnownTool(part) {
 				return nil, fmt.Errorf("unknown tool %q", part)
 			}
 			expanded = []string{part}
@@ -114,7 +114,7 @@ func splitList(raw string) []string {
 	return out
 }
 
-func isKnownTool(tool string) bool {
+func IsKnownTool(tool string) bool {
 	for _, known := range KnownTools {
 		if tool == known {
 			return true

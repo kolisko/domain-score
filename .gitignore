@@ -5,3 +5,9 @@
 /coverage.out
 /reports/
 *.test
+__pycache__/
+*.pyc
+catalog/generated/greenbone-nvt-index.yaml
+catalog/generated/greenbone-notus-advisory-index.yaml
+catalog/generated/greenbone-cert-advisory-index.yaml
+catalog/generated/greenbone-scap-cve-index.yaml

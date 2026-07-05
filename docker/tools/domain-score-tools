@@ -111,6 +111,115 @@ write_tool_finding() {
     > "$file"
 }
 
+run_internetnl_public_site() {
+  local headers="${RAW}/internetnl.headers"
+  local initial="${RAW}/internetnl.initial.html"
+  local probes="${RAW}/internetnl.probes.jsonl"
+  local result="${RAW}/internetnl.result.html"
+  local meta="${RAW}/internetnl.meta.json"
+  local findings="${RAW}/internetnl.json"
+  local base="https://internet.nl"
+  local probe_url="${base}/site/probes/${DOMAIN}/"
+  local result_url="${base}/site/${DOMAIN}/results"
+
+  : > "$probes"
+  curl -fsSL -D "$headers" -o "$initial" -X POST --data-urlencode "url=${DOMAIN}" "${base}/site/"
+
+  local done_state="false"
+  for _ in $(seq 1 70); do
+    local probe_body
+    probe_body="$(curl -fsSL "$probe_url")"
+    printf '%s\n' "$probe_body" >> "$probes"
+    done_state="$(printf '%s' "$probe_body" | jq -r 'all(.[]; .done == true)')"
+    if [[ "$done_state" == "true" ]]; then
+      break
+    fi
+    sleep 3
+  done
+
+  if [[ "$done_state" != "true" ]]; then
+    echo "Internet.nl probes did not finish before timeout" >&2
+    return 75
+  fi
+
+  local final_url
+  final_url="$(curl -fsSL -w '%{url_effective}' -o "$result" "$result_url")"
+  jq -n --arg domain "$DOMAIN" --arg probe_url "$probe_url" --arg result_url "$final_url" \
+    '{domain:$domain, probe_url:$probe_url, result_url:$result_url}' > "$meta"
+
+  python3 - "$DOMAIN" "$result" "$meta" "$findings" <<'PY'
+import html
+import json
+import re
+import sys
+
+domain, result_path, meta_path, findings_path = sys.argv[1:5]
+with open(result_path, "r", encoding="utf-8", errors="replace") as fh:
+    doc = fh.read()
+with open(meta_path, "r", encoding="utf-8") as fh:
+    meta = json.load(fh)
+
+def clean(value):
+    value = re.sub(r"<[^>]+>", " ", value)
+    return " ".join(html.unescape(value).split())
+
+score = None
+m = re.search(r'data-resultscore="([0-9]+)"', doc)
+if m:
+    score = int(m.group(1))
+
+findings = []
+if score is not None and score < 100:
+    findings.append({
+        "source": "external_tool",
+        "tool": "internetnl",
+        "asset": domain,
+        "type": "internetnl_score",
+        "severity": "low" if score >= 80 else "medium",
+        "title": f"Internet.nl website score is {score}%",
+        "evidence": {"score": score, "result_url": meta.get("result_url")},
+        "recommendation": "Review failed and warning Internet.nl categories and align the domain with modern internet standards."
+    })
+
+for match in re.finditer(r'<li class="main-item ([^"]+)" id="([^"]+)".*?<a href="[^"]*">(.*?)</a>', doc, re.S):
+    status, item_id, body = match.groups()
+    status = status.strip()
+    if status == "passed":
+        continue
+    title = clean(body)
+    severity = {
+        "failed": "medium",
+        "warning": "low",
+        "error": "medium",
+    }.get(status, "info")
+    findings.append({
+        "source": "external_tool",
+        "tool": "internetnl",
+        "asset": domain,
+        "type": "internetnl_category",
+        "severity": severity,
+        "title": title,
+        "evidence": {"status": status, "category": item_id, "result_url": meta.get("result_url")},
+        "recommendation": "Open the Internet.nl result URL and fix the failing or recommended standards category."
+    })
+
+with open(findings_path, "w", encoding="utf-8") as fh:
+    json.dump(findings, fh, ensure_ascii=False, indent=2)
+    fh.write("\n")
+PY
+}
+
+run_greenbone_service_notice() {
+  write_tool_finding \
+    "${RAW}/greenbone.json" \
+    "greenbone" \
+    "info" \
+    "Greenbone Community Edition service stack is not running" \
+    "Greenbone CE is a multi-container service with feeds, Redis, PostgreSQL, gvmd and OpenVAS. Start a persistent Greenbone service runtime and connect domain-score to it; the one-shot tools image will not pretend this completed."
+  echo "Greenbone CE requires a running persistent service stack; one-shot docker run cannot perform a real Greenbone scan without gvmd/OpenVAS/feed state." >&2
+  return 78
+}
+
 build_targets() {
   local targets="${OUT}/targets.txt"
   : > "$targets"
@@ -187,29 +296,13 @@ if has_tool "zap"; then
 fi
 
 if has_tool "internetnl"; then
-  printf '{"tool":"internetnl","status":"started"}\n' > "${RAW}/internetnl.started"
-  log "start internetnl"
-  write_tool_finding \
-    "${RAW}/internetnl.json" \
-    "internetnl" \
-    "info" \
-    "Internet.nl local source is present in the tools image" \
-    "Internet.nl is a multi-service compliance stack. The image includes the source tree for local operation; use the normalized domain-score checks and future service mode for full Internet.nl parity."
-  log "done internetnl"
-  printf '{"tool":"internetnl","status":"done","exit_code":0}\n' > "${RAW}/internetnl.status"
+  run_step "internetnl" "${RAW}/internetnl.stdout" "${RAW}/internetnl.stderr" \
+    run_internetnl_public_site
 fi
 
 if has_tool "greenbone"; then
-  printf '{"tool":"greenbone","status":"started"}\n' > "${RAW}/greenbone.started"
-  log "start greenbone"
-  write_tool_finding \
-    "${RAW}/greenbone.json" \
-    "greenbone" \
-    "info" \
-    "Greenbone client components are present in the tools image" \
-    "Greenbone Community Edition is a multi-service vulnerability management stack with feeds and database initialization. Use this image as the controlled runtime base; future releases can persist and initialize the full service state."
-  log "done greenbone"
-  printf '{"tool":"greenbone","status":"done","exit_code":0}\n' > "${RAW}/greenbone.status"
+  run_step "greenbone" "${RAW}/greenbone.stdout" "${RAW}/greenbone.stderr" \
+    run_greenbone_service_notice
 fi
 
 log "scan finished"

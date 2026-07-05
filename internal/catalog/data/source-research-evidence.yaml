@@ -1,0 +1,379 @@
+schema_version: 1
+kind: domain-score.source-research-evidence
+updated: "2026-07-05"
+
+purpose: >
+  Research evidence for the source catalogs and access policies used by the
+  Domain Score atomic-check catalog. This file records which official source
+  repositories, documentation pages, public APIs or feeds were used to derive
+  the cataloged check surface.
+
+scope_notes:
+  - This is a bounded v1 evidence snapshot, not proof that every future upstream rule has been reviewed.
+  - Generated catalogs capture large rule/feed surfaces separately from canonical checks.
+  - Paid, enterprise-only or credentials-required sources are identified so they do not become required for the free/open-source audit path.
+
+sources:
+  - id: nuclei
+    title: ProjectDiscovery Nuclei engine
+    access_class: open_source_free
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - official_documentation
+      - runtime_capability
+    source_urls:
+      - https://github.com/projectdiscovery/nuclei
+      - https://docs.projectdiscovery.io/tools/nuclei/overview
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+    derived_check_surface:
+      - template execution engine capability
+      - protocol coverage and finding metadata capability
+      - runtime vulnerability finding normalization
+    exclusions:
+      - Nuclei cloud/pro/enterprise features are not required for the free path.
+
+  - id: nuclei_templates
+    title: ProjectDiscovery nuclei-templates
+    access_class: open_source_free
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - template_metadata
+      - generated_index
+    source_urls:
+      - https://github.com/projectdiscovery/nuclei-templates
+      - https://docs.projectdiscovery.io/templates/introduction
+    generated_catalogs:
+      - catalog/generated/nuclei-template-index.yaml
+      - catalog/generated/nuclei-template-summary.yaml
+    derived_check_surface:
+      - CVE and vulnerability templates
+      - exposure and misconfiguration templates
+      - technology and panel detection templates
+      - takeover and token disclosure templates
+    exclusions:
+      - Templates that require target credentials, cloud credentials or ownership context are opt-in and credentials-required at runtime.
+
+  - id: subfinder
+    title: ProjectDiscovery Subfinder
+    access_class: open_source_free
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - provider_catalog
+      - runtime_capability
+    source_urls:
+      - https://github.com/projectdiscovery/subfinder
+      - https://docs.projectdiscovery.io/tools/subfinder/overview
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+      - catalog/generated/subfinder-provider-index.yaml
+    derived_check_surface:
+      - passive subdomain inventory
+      - provider availability and key requirement classification
+      - discovered asset evidence for downstream checks
+    exclusions:
+      - Provider-specific paid or key-required data sources are not required for the free path.
+
+  - id: httpx_projectdiscovery
+    title: ProjectDiscovery httpx
+    access_class: open_source_free
+    research_status: inspected_for_v1_runtime_gap
+    evidence_types:
+      - source_code_repository
+      - official_documentation
+      - runtime_capability
+    source_urls:
+      - https://github.com/projectdiscovery/httpx
+      - https://docs.projectdiscovery.io/tools/httpx/overview
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+    derived_check_surface:
+      - HTTP service probing
+      - status, title, content length and technology metadata
+      - HTTP/TLS response evidence for downstream checks
+    exclusions:
+      - Current tools image must be fixed because `httpx` can resolve to the Python HTTPX CLI wrapper.
+
+  - id: naabu
+    title: ProjectDiscovery Naabu
+    access_class: open_source_free
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - official_documentation
+      - runtime_capability
+    source_urls:
+      - https://github.com/projectdiscovery/naabu
+      - https://docs.projectdiscovery.io/tools/naabu/overview
+    generated_catalogs:
+      - catalog/generated/projectdiscovery-capability-index.yaml
+    derived_check_surface:
+      - open port inventory
+      - InternetDB-assisted passive port evidence
+      - target service discovery for downstream probing
+    exclusions:
+      - Active port scanning remains explicit opt-in.
+
+  - id: amass
+    title: OWASP Amass
+    access_class: open_source_free
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - provider_catalog
+      - runtime_capability
+    source_urls:
+      - https://github.com/owasp-amass/amass
+      - https://owasp-amass.github.io/
+    generated_catalogs:
+      - catalog/generated/amass-capability-index.yaml
+      - catalog/generated/amass-provider-index.yaml
+    derived_check_surface:
+      - passive domain enumeration
+      - data source/provider classification
+      - DNS graph and asset relationship evidence
+    exclusions:
+      - Active brute force, alteration and provider-specific paid sources are not part of the default free path.
+
+  - id: zap
+    title: OWASP ZAP
+    access_class: open_source_free
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - official_alert_catalog
+      - generated_index
+    source_urls:
+      - https://github.com/zaproxy/zaproxy
+      - https://www.zaproxy.org/docs/alerts/
+    generated_catalogs:
+      - catalog/generated/zap-rule-index.yaml
+    derived_check_surface:
+      - passive web security alerts
+      - active scan rule identifiers
+      - HTTP header, cookie, CSP, disclosure and injection-class findings
+    exclusions:
+      - Active ZAP attacks remain aggressive and opt-in.
+
+  - id: testssl
+    title: testssl.sh
+    access_class: open_source_free
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - runtime_json_output
+      - generated_index
+    source_urls:
+      - https://github.com/testssl/testssl.sh
+      - https://testssl.sh/
+    generated_catalogs:
+      - catalog/generated/testssl-jsonid-index.yaml
+    derived_check_surface:
+      - TLS protocol support
+      - cipher, certificate, chain and vulnerability probes
+      - TLS hardening and legacy compatibility findings
+    exclusions:
+      - No paid testssl features are required.
+
+  - id: internetnl
+    title: Internet.nl
+    access_class: open_source_free
+    research_status: inspected_for_v1_runtime_partial
+    evidence_types:
+      - source_code_repository
+      - official_test_categories
+      - generated_index
+    source_urls:
+      - https://github.com/internetstandards/Internet.nl
+      - https://internet.nl/
+    generated_catalogs:
+      - catalog/generated/internetnl-subtest-index.yaml
+    derived_check_surface:
+      - web standards checks
+      - mail standards checks
+      - DNSSEC, IPv6, TLS, RPKI and security.txt subtests
+    exclusions:
+      - Full local stack orchestration remains partial in the current tools runtime.
+
+  - id: greenbone_community_feed
+    title: Greenbone Community Feed
+    access_class: open_source_free
+    research_status: inspected_for_v1_runtime_partial
+    evidence_types:
+      - source_code_repository
+      - feed_sync_tool
+      - synced_feed_indexes
+    source_urls:
+      - https://github.com/greenbone/openvas-scanner
+      - https://github.com/greenbone/greenbone-feed-sync
+      - https://greenbone.github.io/docs/latest/
+    generated_catalogs:
+      - catalog/generated/greenbone-feed-capability-index.yaml
+      - catalog/generated/greenbone-nvt-index.yaml.gz
+      - catalog/generated/greenbone-notus-advisory-index.yaml.gz
+      - catalog/generated/greenbone-cert-advisory-index.yaml.gz
+      - catalog/generated/greenbone-gvmd-data-object-index.yaml
+      - catalog/generated/greenbone-scap-cve-index.yaml.gz
+    derived_check_surface:
+      - NVT vulnerability checks
+      - Notus package advisories
+      - CERT advisories
+      - SCAP CVE metadata
+      - scanner/feed capabilities
+    exclusions:
+      - Full Greenbone CE scanner orchestration remains partial in the current tools runtime.
+
+  - id: greenbone_enterprise_feed
+    title: Greenbone Enterprise Feed
+    access_class: paid
+    research_status: paid_excluded_from_free_v1
+    evidence_types:
+      - vendor_documentation
+      - access_policy
+    source_urls:
+      - https://www.greenbone.net/en/feed-comparison/
+      - https://www.greenbone.net/en/enterprise-feed/
+    generated_catalogs:
+      - catalog/generated/greenbone-feed-capability-index.yaml
+    derived_check_surface:
+      - paid enterprise vulnerability feed coverage marker
+    exclusions:
+      - Enterprise feed content is not included in the free/open-source catalog coverage.
+
+  - id: shodan_internetdb
+    title: Shodan InternetDB
+    access_class: free_public_no_key
+    research_status: inspected_for_v1
+    evidence_types:
+      - public_api_documentation
+      - generated_index
+    source_urls:
+      - https://internetdb.shodan.io/
+    generated_catalogs:
+      - catalog/generated/shodan-internetdb-field-index.yaml
+    derived_check_surface:
+      - public hostnames, ports, tags and CVE hint fields
+      - no-key public exposure evidence
+    exclusions:
+      - Full Shodan API fields are classified separately as paid.
+
+  - id: shodan_api
+    title: Shodan API
+    access_class: paid
+    research_status: paid_excluded_from_free_v1
+    evidence_types:
+      - public_api_documentation
+      - access_policy
+    source_urls:
+      - https://developer.shodan.io/api
+    generated_catalogs: []
+    derived_check_surface:
+      - paid hosted internet intelligence metadata
+    exclusions:
+      - Not required for the free/open-source audit path.
+
+  - id: virustotal_domain_api
+    title: VirusTotal domain API
+    access_class: free_with_optional_key
+    research_status: inspected_for_v1_optional_key
+    evidence_types:
+      - public_api_documentation
+      - generated_index
+    source_urls:
+      - https://docs.virustotal.com/reference/domain-info
+    generated_catalogs:
+      - catalog/generated/virustotal-domain-field-index.yaml
+    derived_check_surface:
+      - domain reputation and analysis metadata fields
+      - optional API-key enrichment
+    exclusions:
+      - Enterprise-only relationships and paid API features are excluded from the free catalog path.
+
+  - id: spamhaus_dbl
+    title: Spamhaus DBL
+    access_class: free_public_no_key
+    research_status: inspected_for_v1
+    evidence_types:
+      - public_dnsbl_documentation
+      - generated_index
+    source_urls:
+      - https://www.spamhaus.org/blocklists/domain-blocklist/
+    generated_catalogs:
+      - catalog/generated/spamhaus-dbl-return-code-index.yaml
+    derived_check_surface:
+      - domain blocklist and reputation return codes
+    exclusions:
+      - Paid Spamhaus data products are not required for this DNSBL check.
+
+  - id: surbl
+    title: SURBL
+    access_class: free_public_no_key
+    research_status: inspected_for_v1
+    evidence_types:
+      - public_dnsbl_documentation
+      - generated_index
+    source_urls:
+      - https://www.surbl.org/lists
+    generated_catalogs:
+      - catalog/generated/surbl-return-code-index.yaml
+    derived_check_surface:
+      - malware, phishing, abuse and suspicious domain return codes
+    exclusions:
+      - Paid commercial access tiers are not required for this DNSBL check.
+
+  - id: urlhaus
+    title: URLhaus host/domain lookup
+    access_class: free_public_no_key
+    research_status: inspected_for_v1
+    evidence_types:
+      - public_api_documentation
+      - generated_index
+    source_urls:
+      - https://urlhaus.abuse.ch/api/
+    generated_catalogs:
+      - catalog/generated/urlhaus-host-field-index.yaml
+    derived_check_surface:
+      - malware URL host intelligence fields
+      - threat status and payload relationship metadata
+    exclusions:
+      - No paid URLhaus API is required for the cataloged host lookup fields.
+
+  - id: ssl_labs
+    title: SSL Labs public API/cache
+    access_class: free_with_optional_key
+    research_status: inspected_for_v1_optional_key
+    evidence_types:
+      - public_api_documentation
+      - generated_index
+    source_urls:
+      - https://www.ssllabs.com/projects/ssllabs-apis/
+      - https://github.com/ssllabs/ssllabs-scan
+    generated_catalogs:
+      - catalog/generated/ssl-labs-api-field-index.yaml
+    derived_check_surface:
+      - external TLS grade and endpoint field metadata
+      - certificate, protocol, cipher and vulnerability signal fields
+    exclusions:
+      - SSL Labs is a hosted service, not a local open-source scanner.
+
+  - id: mozilla_observatory
+    title: Mozilla Observatory
+    access_class: free_public_no_key
+    research_status: inspected_for_v1
+    evidence_types:
+      - source_code_repository
+      - public_service_documentation
+      - generated_index
+    source_urls:
+      - https://github.com/mdn/mdn-http-observatory
+      - https://observatory.mozilla.org/
+    generated_catalogs:
+      - catalog/generated/mozilla-observatory-expectation-index.yaml
+    derived_check_surface:
+      - HTTP security header expectations
+      - cookie, CSP, CORS, HSTS and framing policy signals
+    exclusions:
+      - Mozilla Observatory hosted availability is separate from local internal HTTP checks.
