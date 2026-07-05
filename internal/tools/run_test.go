@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -72,6 +73,17 @@ exit 0
 	}
 	if len(got.Observation.Findings) != 1 {
 		t.Fatalf("findings = %#v", got.Observation.Findings)
+	}
+	findingsData, err := os.ReadFile(filepath.Join(got.Observation.CacheDir, "findings.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cachedFindings []audit.ToolFinding
+	if err := json.Unmarshal(findingsData, &cachedFindings); err != nil {
+		t.Fatal(err)
+	}
+	if len(cachedFindings) != 1 || cachedFindings[0].Tool != "nuclei" || cachedFindings[0].Title != "Fake Finding" {
+		t.Fatalf("cached findings = %#v", cachedFindings)
 	}
 	if len(got.Results) == 0 {
 		t.Fatal("expected normalized audit results")

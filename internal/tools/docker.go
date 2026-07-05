@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -120,6 +121,9 @@ func Run(ctx context.Context, target audit.Target, opts Options) (RunResult, err
 	obs.Statuses = statuses
 	findings, parseErrors := ParseCache(cacheDir)
 	obs.Findings = findings
+	if err := writeFindingsFile(cacheDir, findings); err != nil {
+		obs.Errors = append(obs.Errors, err.Error())
+	}
 	obs.Errors = append(obs.Errors, statusErrors...)
 	obs.Errors = append(obs.Errors, parseErrors...)
 	obs.Duration = time.Since(start).String()
@@ -130,6 +134,19 @@ func Run(ctx context.Context, target audit.Target, opts Options) (RunResult, err
 	}
 
 	return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
+}
+
+func writeFindingsFile(cacheDir string, findings []audit.ToolFinding) error {
+	data, err := json.MarshalIndent(findings, "", "  ")
+	if err != nil {
+		return fmt.Errorf("write findings.json: marshal findings: %w", err)
+	}
+	data = append(data, '\n')
+	path := filepath.Join(cacheDir, "findings.json")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return fmt.Errorf("write findings.json: %w", err)
+	}
+	return nil
 }
 
 func ensureImage(ctx context.Context, image string, pullPolicy string) (bool, error) {
