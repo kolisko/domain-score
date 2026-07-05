@@ -181,8 +181,9 @@ if has_tool "testssl"; then
 fi
 
 if has_tool "zap"; then
+  mkdir -p /tmp/zap-home
   run_step "zap" "${RAW}/zap.stdout" "${RAW}/zap.stderr" \
-    zap-baseline.py -t "$URL" -J "/zap/wrk/raw/zap.json" -I -m 1
+    bash -lc 'cd /zap/wrk && /zap/zap-baseline.py -t "$1" -J raw/zap.json -I -m 1 -z "-dir /tmp/zap-home"' _ "$URL"
 fi
 
 if has_tool "internetnl"; then
