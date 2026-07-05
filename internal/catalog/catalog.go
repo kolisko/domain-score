@@ -153,8 +153,26 @@ func (c Check) InternalCheckIDs() []string {
 	return implementedStringList(c.ImplementedBy, "internal_check_ids")
 }
 
+func (c Check) InternalResultIDs() []string {
+	return implementedStringList(c.ImplementedBy, "internal_results")
+}
+
 func (c Check) ToolNames() []string {
 	return implementedStringList(c.ImplementedBy, "tools")
+}
+
+func (c Check) SourceLabels() []string {
+	labels := []string{}
+	for _, id := range c.InternalCheckIDs() {
+		labels = append(labels, "internal:"+id)
+	}
+	for _, id := range c.InternalResultIDs() {
+		labels = append(labels, "internal:"+id)
+	}
+	for _, tool := range c.ToolNames() {
+		labels = append(labels, "tool:"+tool)
+	}
+	return labels
 }
 
 func implementedStringList(value any, key string) []string {

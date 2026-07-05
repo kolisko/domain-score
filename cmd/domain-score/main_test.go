@@ -61,6 +61,30 @@ func TestListAllChecksCommand(t *testing.T) {
 			t.Fatalf("all checks output missing %q:\n%s", want, text)
 		}
 	}
+	for _, want := range []string{"SOURCE", "tool:naabu", "internal:dns.dmarc"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("all checks output missing source %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestListToolChecksCommand(t *testing.T) {
+	cmd := listCommand()
+	cmd.SetArgs([]string{"tool-checks"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	for _, want := range []string{"SOURCE", "network.open_ports", "tool:naabu", "vulnerability.known_cve_detected"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("tool checks output missing %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "dns.a_record") {
+		t.Fatalf("tool checks output includes internal-only check:\n%s", text)
+	}
 }
 
 func TestListSourceCatalogsCommand(t *testing.T) {

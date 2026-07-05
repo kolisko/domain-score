@@ -545,6 +545,11 @@ func listCommand() *cobra.Command {
 		RunE:  runListAllChecks,
 	})
 	cmd.AddCommand(&cobra.Command{
+		Use:   "tool-checks",
+		Short: "List canonical atomic checks backed by external tools",
+		RunE:  runListToolChecks,
+	})
+	cmd.AddCommand(&cobra.Command{
 		Use:   "source-catalogs",
 		Short: "List generated source/tool catalogs and item counts",
 		RunE:  runListSourceCatalogs,
@@ -567,12 +572,39 @@ func runListAllChecks(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6s  %s\n", "CHECK", "CATEGORY", "MODE", "COVERAGE", "WEIGHT", "TITLE")
-	fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6s  %s\n", "-----", "--------", "----", "--------", "------", "-----")
-	for _, check := range cat.Checks {
-		fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6d  %s\n", check.ID, check.Category, check.Mode, check.CoverageStatus, check.Weight, check.Title)
-	}
+	printCatalogChecks(cmd, cat.Checks)
 	return nil
+}
+
+func runListToolChecks(cmd *cobra.Command, args []string) error {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		return err
+	}
+	toolChecks := []catalog.Check{}
+	for _, check := range cat.Checks {
+		if len(check.ToolNames()) > 0 {
+			toolChecks = append(toolChecks, check)
+		}
+	}
+	printCatalogChecks(cmd, toolChecks)
+	return nil
+}
+
+func printCatalogChecks(cmd *cobra.Command, checks []catalog.Check) {
+	fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6s  %-34s  %s\n", "CHECK", "CATEGORY", "MODE", "COVERAGE", "WEIGHT", "SOURCE", "TITLE")
+	fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6s  %-34s  %s\n", "-----", "--------", "----", "--------", "------", "------", "-----")
+	for _, check := range checks {
+		fmt.Fprintf(cmd.OutOrStdout(), "%-44s  %-24s  %-8s  %-9s  %-6d  %-34s  %s\n", check.ID, check.Category, check.Mode, check.CoverageStatus, check.Weight, formatCheckSources(check), check.Title)
+	}
+}
+
+func formatCheckSources(check catalog.Check) string {
+	labels := check.SourceLabels()
+	if len(labels) == 0 {
+		return "-"
+	}
+	return strings.Join(labels, ",")
 }
 
 func runListSourceCatalogs(cmd *cobra.Command, args []string) error {
