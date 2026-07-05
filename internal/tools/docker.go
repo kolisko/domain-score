@@ -116,8 +116,11 @@ func Run(ctx context.Context, target audit.Target, opts Options) (RunResult, err
 	statusf("reading raw outputs")
 	rawFiles, _ := listRawFiles(cacheDir)
 	obs.RawFiles = rawFiles
+	statuses, statusErrors := ParseStatuses(cacheDir)
+	obs.Statuses = statuses
 	findings, parseErrors := ParseCache(cacheDir)
 	obs.Findings = findings
+	obs.Errors = append(obs.Errors, statusErrors...)
 	obs.Errors = append(obs.Errors, parseErrors...)
 	obs.Duration = time.Since(start).String()
 	if len(obs.Errors) > 0 {
@@ -179,6 +182,7 @@ func DockerRunArgs(image string, cacheDir string, domain string, url string, sel
 		"--network", "bridge",
 		"-e", "HOME=/tmp",
 		"-v", cacheDir + ":/work:rw",
+		"-v", cacheDir + ":/zap/wrk:rw",
 		image,
 		"scan",
 		"--domain", domain,

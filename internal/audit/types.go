@@ -247,11 +247,19 @@ type ToolObservation struct {
 	CacheDir    string        `json:"cache_dir,omitempty"`
 	Selected    []string      `json:"selected,omitempty"`
 	Findings    []ToolFinding `json:"findings,omitempty"`
+	Statuses    []ToolStatus  `json:"statuses,omitempty"`
 	Errors      []string      `json:"errors,omitempty"`
 	RawFiles    []string      `json:"raw_files,omitempty"`
 	Duration    string        `json:"duration,omitempty"`
 	PullPolicy  string        `json:"pull_policy,omitempty"`
 	ImagePulled bool          `json:"image_pulled,omitempty"`
+}
+
+type ToolStatus struct {
+	Tool           string `json:"tool"`
+	Status         string `json:"status,omitempty"`
+	ExitCode       int    `json:"exit_code,omitempty"`
+	ElapsedSeconds int    `json:"elapsed_seconds,omitempty"`
 }
 
 type ToolFinding struct {

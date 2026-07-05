@@ -46,6 +46,28 @@ func ParseCache(cacheDir string) ([]audit.ToolFinding, []string) {
 	return findings, errors
 }
 
+func ParseStatuses(cacheDir string) ([]audit.ToolStatus, []string) {
+	rawDir := filepath.Join(cacheDir, "raw")
+	matches, err := filepath.Glob(filepath.Join(rawDir, "*.status"))
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	statuses := []audit.ToolStatus{}
+	errors := []string{}
+	for _, path := range matches {
+		var status audit.ToolStatus
+		if err := readJSON(path, &status); err != nil {
+			errors = append(errors, fmt.Sprintf("%s: %v", filepath.Base(path), err))
+			continue
+		}
+		if status.Tool == "" {
+			status.Tool = strings.TrimSuffix(filepath.Base(path), ".status")
+		}
+		statuses = append(statuses, status)
+	}
+	return statuses, errors
+}
+
 func parseSubfinder(path string) ([]audit.ToolFinding, error) {
 	return parseJSONLines(path, func(raw map[string]any) (audit.ToolFinding, bool) {
 		host := stringValue(raw, "host")

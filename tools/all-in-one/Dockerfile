@@ -25,6 +25,7 @@ ARG GREENBONE_FEED_SYNC_VERSION=25.3.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
+    bsdextrautils \
     ca-certificates \
     curl \
     dnsutils \

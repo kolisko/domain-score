@@ -95,6 +95,47 @@ func TestResultsFromObservationDoesNotPassIncompleteSelectedTool(t *testing.T) {
 	}
 }
 
+func TestParseStatusesParsesToolExitCodes(t *testing.T) {
+	cache := t.TempDir()
+	raw := filepath.Join(cache, "raw")
+	if err := os.MkdirAll(raw, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeTestFile(t, filepath.Join(raw, "testssl.status"), `{"tool":"testssl","status":"done","exit_code":244,"elapsed_seconds":1}`)
+
+	statuses, errors := ParseStatuses(cache)
+	if len(errors) != 0 {
+		t.Fatalf("ParseStatuses errors = %#v", errors)
+	}
+	if len(statuses) != 1 || statuses[0].Tool != "testssl" || statuses[0].ExitCode != 244 {
+		t.Fatalf("unexpected statuses: %#v", statuses)
+	}
+}
+
+func TestResultsFromObservationMarksFailedToolStatusAsError(t *testing.T) {
+	results := resultsFromObservation(audit.ToolObservation{
+		Enabled:  true,
+		Runtime:  RuntimeDocker,
+		Image:    "ghcr.io/kolisko/domain-score-tools:vtest",
+		Selected: []string{"testssl"},
+		Statuses: []audit.ToolStatus{{Tool: "testssl", Status: "done", ExitCode: 244}},
+		RawFiles: []string{"/cache/raw/testssl.status", "/cache/raw/testssl.stderr"},
+	})
+	var got audit.Result
+	for _, result := range results {
+		if result.CheckID == "tools.testssl_findings" {
+			got = result
+			break
+		}
+	}
+	if got.CheckID == "" {
+		t.Fatalf("missing testssl result: %#v", results)
+	}
+	if got.Status != audit.StatusError {
+		t.Fatalf("testssl status = %s, want error", got.Status)
+	}
+}
+
 func ParseCacheWithFixture(t *testing.T, cache string) (audit.ToolObservation, []string) {
 	t.Helper()
 	raw := filepath.Join(cache, "raw")

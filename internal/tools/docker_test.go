@@ -18,6 +18,7 @@ func TestDockerRunArgs(t *testing.T) {
 		"--network", "bridge",
 		"-e", "HOME=/tmp",
 		"-v", "/tmp/cache:/work:rw",
+		"-v", "/tmp/cache:/zap/wrk:rw",
 		"image:test",
 		"scan",
 		"--domain", "example.com",
