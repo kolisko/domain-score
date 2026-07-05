@@ -118,7 +118,7 @@ domain-score tools list
 ```
 
 The default image is an embedded, pinned GHCR digest. The current logical tools
-release is `ghcr.io/kolisko/domain-score-tools:tools-v0.1.1`, and the CLI uses
+release is `ghcr.io/kolisko/domain-score-tools:tools-v0.1.2`, and the CLI uses
 the exact digest for that image by default instead of `latest` or the CLI
 version tag. If the image is missing and `--tools-pull auto` is used, Domain
 Score pulls it automatically. Docker Desktop or Docker Engine must already be
