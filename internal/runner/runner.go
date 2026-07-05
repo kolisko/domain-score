@@ -28,6 +28,7 @@ type Options struct {
 	Tools         exttools.Options
 	CheckID       string
 	ReportCheckID string
+	ToolChecks    []string
 }
 
 func Run(ctx context.Context, target audit.Target, opts Options) (audit.Report, error) {
@@ -80,8 +81,15 @@ func Run(ctx context.Context, target audit.Target, opts Options) (audit.Report, 
 		ev.Tools = toolResult.Observation
 		if opts.ReportCheckID != "" {
 			results = append(results, atomicToolResult(toolResult.Observation, opts.ReportCheckID))
+		} else if len(opts.ToolChecks) > 0 {
+			results = append(results, atomicToolResultsForTools(toolResult.Observation, opts.ToolChecks)...)
 		} else {
-			results = append(results, toolResult.Results...)
+			atomicResults := atomicToolResultsForFindings(toolResult.Observation)
+			if len(atomicResults) > 0 {
+				results = append(results, atomicResults...)
+			} else {
+				results = append(results, toolResult.Results...)
+			}
 		}
 	}
 	aggressive := includesAggressive(selected) || toolResult.Observation.Enabled
@@ -102,7 +110,7 @@ func Select(all []audit.Check, opts Options) ([]audit.Check, error) {
 	if err != nil {
 		return nil, err
 	}
-	if opts.CheckID == "" && opts.ReportCheckID != "" {
+	if opts.CheckID == "" && (opts.ReportCheckID != "" || len(opts.ToolChecks) > 0) {
 		return []audit.Check{}, nil
 	}
 	enable := set(opts.Enable)
@@ -190,12 +198,59 @@ func atomicToolResult(obs audit.ToolObservation, checkID string) audit.Result {
 			findings = append(findings, finding)
 		}
 	}
+	return atomicCatalogToolResult(obs, check, findings)
+}
+
+func atomicToolResultsForFindings(obs audit.ToolObservation) []audit.Result {
+	ids := []string{}
+	seen := map[string]bool{}
+	for _, finding := range obs.Findings {
+		if finding.AtomicCheckID == "" || seen[finding.AtomicCheckID] {
+			continue
+		}
+		seen[finding.AtomicCheckID] = true
+		ids = append(ids, finding.AtomicCheckID)
+	}
+	results := make([]audit.Result, 0, len(ids))
+	for _, id := range ids {
+		results = append(results, atomicToolResult(obs, id))
+	}
+	return results
+}
+
+func atomicToolResultsForTools(obs audit.ToolObservation, tools []string) []audit.Result {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		return []audit.Result{{
+			CheckID:  "tools.catalog",
+			Title:    "Tool check catalog",
+			Category: "external_tools",
+			Status:   audit.StatusError,
+			Severity: audit.SeverityMedium,
+			Error:    err.Error(),
+		}}
+	}
+	checks := cat.ChecksForTools(tools)
+	results := make([]audit.Result, 0, len(checks))
+	for _, check := range checks {
+		findings := []audit.ToolFinding{}
+		for _, finding := range obs.Findings {
+			if finding.AtomicCheckID == check.ID {
+				findings = append(findings, finding)
+			}
+		}
+		results = append(results, atomicCatalogToolResult(obs, check, findings))
+	}
+	return results
+}
+
+func atomicCatalogToolResult(obs audit.ToolObservation, check catalog.Check, findings []audit.ToolFinding) audit.Result {
 	status := audit.StatusPass
 	if len(obs.Errors) > 0 && len(obs.RawFiles) == 0 && len(findings) == 0 {
 		status = audit.StatusError
 	} else if len(findings) > 0 {
 		status = highestFindingStatus(findings)
-	} else if strings.HasPrefix(checkID, "inventory.") {
+	} else if strings.HasPrefix(check.ID, "inventory.") {
 		status = audit.StatusWarn
 	}
 	return audit.Result{
@@ -207,9 +262,29 @@ func atomicToolResult(obs audit.ToolObservation, checkID string) audit.Result {
 		Severity:       audit.Severity(check.Severity),
 		Weight:         check.Weight,
 		ScoreImpact:    atomicScoreImpact(status, check.Weight, findings),
-		Evidence:       map[string]any{"findings": findings, "count": len(findings), "tools": obs.Selected, "errors": obs.Errors},
+		Evidence:       map[string]any{"findings": findings, "count": len(findings), "tools": obs.Selected, "sources": selectedToolSourceLabels(obs.Selected, check), "errors": obs.Errors},
 		Recommendation: check.Remediation,
 	}
+}
+
+func selectedToolSourceLabels(selected []string, check catalog.Check) []string {
+	want := map[string]bool{}
+	for _, tool := range selected {
+		tool = strings.TrimSpace(tool)
+		if tool != "" {
+			want[tool] = true
+		}
+	}
+	labels := []string{}
+	for _, tool := range check.ToolNames() {
+		if want[tool] {
+			labels = append(labels, "tool:"+tool)
+		}
+	}
+	if len(labels) > 0 {
+		return labels
+	}
+	return check.SourceLabels()
 }
 
 func highestFindingStatus(findings []audit.ToolFinding) audit.Status {

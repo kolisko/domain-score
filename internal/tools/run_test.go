@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -164,5 +165,25 @@ exit 0
 	log := string(logData)
 	if !strings.Contains(log, "rm -f fake-container") {
 		t.Fatalf("docker cleanup missing from log:\n%s", log)
+	}
+}
+
+func TestToolLogFilterHidesVerboseZapRows(t *testing.T) {
+	var out bytes.Buffer
+	filter := &toolLogFilter{dst: &out}
+	_, _ = filter.Write([]byte("domain-score tools container: start zap\n"))
+	_, _ = filter.Write([]byte("PASS: Cookie No HttpOnly Flag [10010]\n"))
+	_, _ = filter.Write([]byte("WARN-NEW: Missing Anti-clickjacking Header [10020] x 1\n"))
+	_, _ = filter.Write([]byte("\thttps://example.com (200 OK)\n"))
+	filter.Flush()
+
+	text := out.String()
+	if !strings.Contains(text, "domain-score tools container: start zap") {
+		t.Fatalf("progress line missing:\n%s", text)
+	}
+	for _, unwanted := range []string{"PASS:", "WARN-NEW:", "https://example.com"} {
+		if strings.Contains(text, unwanted) {
+			t.Fatalf("verbose line %q was not filtered:\n%s", unwanted, text)
+		}
 	}
 }

@@ -13,7 +13,9 @@ func TestConsoleRendersAlignedStatusRows(t *testing.T) {
 	for _, want := range []string{
 		"Domain Score: example.com  score=73/100 grade=C profile=safe aggressive=false",
 		"STATUS  CATEGORY                CHECK",
+		"SOURCE",
 		"PASS    dns                     dns.a_record",
+		"internal:dns.a_record",
 		"WARN    http_security           http.hsts",
 		"FAIL    seo                     seo.title",
 		"ERROR   transparency            transparency.rdap",
@@ -102,12 +104,12 @@ func TestMarkdownIncludesStatusMatrix(t *testing.T) {
 
 	for _, want := range []string{
 		"## Check table",
-		"| PASS | WARN | FAIL | ERROR | N/A | Category | Check | Weight | Recommendation |",
-		"| x |  |  |  |  | `dns` | `dns.a_record` A record | 5 | - |",
-		"|  | x |  |  |  | `http_security` | `http.hsts` HSTS | 5 | Add HSTS. |",
-		"|  |  | x |  |  | `seo` | `seo.title` Title | 4 | Add a title. |",
-		"|  |  |  | x |  | `transparency` | `transparency.rdap` RDAP | 2 | - |",
-		"|  |  |  |  | x | `reputation` | `reputation.virustotal` VirusTotal | 3 | - |",
+		"| PASS | WARN | FAIL | ERROR | N/A | Category | Check | Weight | Source | Recommendation |",
+		"| x |  |  |  |  | `dns` | `dns.a_record` A record | 5 | `internal:dns.a_record` | - |",
+		"|  | x |  |  |  | `http_security` | `http.hsts` HSTS | 5 | `internal:http.hsts` | Add HSTS. |",
+		"|  |  | x |  |  | `seo` | `seo.title` Title | 4 | `internal:seo.title` | Add a title. |",
+		"|  |  |  | x |  | `transparency` | `transparency.rdap` RDAP | 2 | `internal:transparency.rdap` | - |",
+		"|  |  |  |  | x | `reputation` | `reputation.virustotal` VirusTotal | 3 | `internal:reputation.virustotal` | - |",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("markdown output missing %q:\n%s", want, out)

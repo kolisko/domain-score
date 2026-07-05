@@ -39,11 +39,11 @@ func MarkdownWithOptions(r audit.Report, opts MarkdownOptions) []byte {
 	}
 
 	fmt.Fprintln(&b, "\n## Check table")
-	fmt.Fprintln(&b, "| PASS | WARN | FAIL | ERROR | N/A | Category | Check | Weight | Recommendation |")
-	fmt.Fprintln(&b, "|:---:|:---:|:---:|:---:|:---:|---|---|---:|---|")
+	fmt.Fprintln(&b, "| PASS | WARN | FAIL | ERROR | N/A | Category | Check | Weight | Source | Recommendation |")
+	fmt.Fprintln(&b, "|:---:|:---:|:---:|:---:|:---:|---|---|---:|---|---|")
 	for _, res := range sortedResults(r.Results, opts.Sort) {
 		pass, warn, fail, errMark, na := markdownStatusMarks(res.Status)
-		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | `%s` | `%s` %s | %d | %s |\n",
+		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | `%s` | `%s` %s | %d | `%s` | %s |\n",
 			pass,
 			warn,
 			fail,
@@ -53,6 +53,7 @@ func MarkdownWithOptions(r audit.Report, opts MarkdownOptions) []byte {
 			res.CheckID,
 			escapeTable(res.Title),
 			res.Weight,
+			escapeTable(resultSource(res)),
 			escapeTable(shortRecommendation(res.Recommendation)),
 		)
 	}
@@ -86,6 +87,7 @@ func MarkdownWithOptions(r audit.Report, opts MarkdownOptions) []byte {
 		fmt.Fprintf(&b, "- Mode: `%s`\n", res.Mode)
 		fmt.Fprintf(&b, "- Status: `%s`\n", res.Status)
 		fmt.Fprintf(&b, "- Weight: `%d`\n", res.Weight)
+		fmt.Fprintf(&b, "- Source: `%s`\n", resultSource(res))
 		if res.Recommendation != "" {
 			fmt.Fprintf(&b, "- Recommendation: %s\n", res.Recommendation)
 		}

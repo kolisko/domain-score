@@ -148,7 +148,7 @@ func TestResolveSingleCheckCatalogTool(t *testing.T) {
 
 func TestMissingScanArgPrintsScanHelp(t *testing.T) {
 	out := executeExpectHelp(t, scanCommand())
-	for _, want := range []string{"scan <domain-or-url>", "--check", "--tools", "--format"} {
+	for _, want := range []string{"scan <domain-or-url>", "--check", "--tools", "--tool-checks", "--format"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("scan help missing %q:\n%s", want, out)
 		}

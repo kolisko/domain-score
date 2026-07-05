@@ -23,6 +23,7 @@ domain-score scan example.com --details-check dns.dmarc
 domain-score scan example.com --check dns.dmarc
 domain-score scan example.com --check network.open_ports
 domain-score scan example.com --tools all
+domain-score scan example.com --tool-checks zap
 domain-score tools doctor
 domain-score tools pull
 domain-score scan example.com --aggressive
@@ -33,8 +34,9 @@ domain-score update
 ```
 
 By default, `scan` prints a colorized aligned console table to stdout, one row
-per check, sorted by check weight descending. Use `--no-color` to disable ANSI
-colors.
+per check, sorted by check weight descending. The table includes `SOURCE`, so
+tool-backed results show labels such as `tool:zap` and built-in results show
+labels such as `internal:dns.dmarc`. Use `--no-color` to disable ANSI colors.
 
 The required argument after `scan` is the domain to audit. Pass a bare domain
 such as `example.com`, or a URL such as `https://example.com`; Domain Score
@@ -53,6 +55,7 @@ Useful flags:
 - `--details-check check.id`: add a detailed explanation for one concrete check.
 - `--check check.id`: run one internal or catalog atomic check. Catalog checks use their mapped internal check or external Docker tool when available.
 - `--tools none|all|subfinder,httpx,naabu,nuclei,amass,testssl,zap,internetnl,greenbone`: run Docker-based external tools. Default is `none`.
+- `--tool-checks zap|nuclei|testssl|...`: run only canonical atomic checks backed by the selected tool(s), without the default internal scan.
 - `--tools-pull auto|always|never`: control external tools image pulls. Default is `auto`.
 - `--tools-timeout 60m`: timeout for external Docker tools.
 - `--out -`: print selected report formats to stdout.
@@ -128,10 +131,15 @@ tool installations:
 domain-score scan example.com --tools all
 domain-score scan example.com --tools projectdiscovery
 domain-score scan example.com --tools subfinder,httpx,nuclei
+domain-score scan example.com --tool-checks zap
 domain-score tools doctor
 domain-score tools pull
 domain-score tools list
 ```
+
+Use `--tools <name>` to add external tool evidence to a normal Domain Score
+scan. Use `--tool-checks <name>` when you want the report to contain only the
+canonical atomic checks backed by that tool, for example all ZAP-backed checks.
 
 The default image is an embedded, pinned GHCR digest. The current logical tools
 release is `ghcr.io/kolisko/domain-score-tools:tools-v0.1.4`, and the CLI uses
@@ -155,15 +163,16 @@ Supported tool aliases:
 - `standards`: internetnl.
 - `vuln`: nuclei, greenbone.
 
-Raw tool outputs are cached under the user cache directory at
-`domain-score/tools/<domain>/latest/raw/`; each new scan replaces the previous
-`latest` cache for that domain. Active tools such as port scanning, Nuclei and
-Greenbone should only be used on domains and infrastructure you own or are
-authorized to test.
+Raw tool outputs are cached under `~/.domain-score/runs/<domain>/<run>/raw/`,
+with normalized findings and reports next to them. Active tools such as port
+scanning, Nuclei and Greenbone should only be used on domains and infrastructure
+you own or are authorized to test.
 
-The global `--tools-timeout` limits the whole Docker run. While tools run, their
-stdout and stderr are streamed to the console and also saved in `raw/`. Nuclei
-prints periodic stats during long template runs so the scan does not look stuck.
+The global `--tools-timeout` limits the whole Docker run. While tools run,
+Domain Score streams progress lines to the console and saves raw tool output in
+`raw/`; verbose tool pass/warn chatter is kept out of the main report stream.
+Nuclei prints periodic stats during long template runs so the scan does not look
+stuck.
 
 ## Competitive Coverage
 

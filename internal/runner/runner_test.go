@@ -96,6 +96,20 @@ func TestSelectToolOnlyCatalogCheckDoesNotRunDefaultChecks(t *testing.T) {
 	}
 }
 
+func TestSelectToolChecksDoesNotRunDefaultChecks(t *testing.T) {
+	checks := []audit.Check{
+		fakeCheck{meta: audit.CheckMeta{ID: "safe.one", Mode: audit.ModeSafe, Weight: 1}},
+		fakeCheck{meta: audit.CheckMeta{ID: "safe.two", Mode: audit.ModeSafe, Weight: 1}},
+	}
+	got, err := Select(checks, Options{ToolChecks: []string{"zap"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("selected %d internal checks for tool-checks mode, want 0", len(got))
+	}
+}
+
 func TestAtomicToolResultUsesCatalogCheckID(t *testing.T) {
 	result := atomicToolResult(audit.ToolObservation{
 		Enabled:  true,
@@ -117,5 +131,52 @@ func TestAtomicToolResultUsesCatalogCheckID(t *testing.T) {
 	}
 	if result.Weight == 0 {
 		t.Fatal("expected catalog weight")
+	}
+	if sources, ok := result.Evidence["sources"].([]string); !ok || len(sources) != 1 || sources[0] != "tool:naabu" {
+		t.Fatalf("expected sources evidence, got %#v", result.Evidence["sources"])
+	}
+}
+
+func TestAtomicToolResultsForFindingsExpandsCanonicalChecks(t *testing.T) {
+	results := atomicToolResultsForFindings(audit.ToolObservation{
+		Enabled:  true,
+		Selected: []string{"zap"},
+		RawFiles: []string{"/tmp/raw/zap.json"},
+		Findings: []audit.ToolFinding{{
+			Tool:          "zap",
+			AtomicCheckID: "http.hsts_present",
+			SourceRuleID:  "zap.10035",
+			Severity:      "high",
+			Title:         "Strict-Transport-Security Header Not Set",
+		}},
+	})
+	if len(results) != 1 {
+		t.Fatalf("results = %d, want 1", len(results))
+	}
+	if results[0].CheckID != "http.hsts_present" || results[0].Status != audit.StatusFail {
+		t.Fatalf("result = %#v", results[0])
+	}
+}
+
+func TestAtomicToolResultsForToolsIncludesPassingToolChecks(t *testing.T) {
+	results := atomicToolResultsForTools(audit.ToolObservation{
+		Enabled:  true,
+		Selected: []string{"zap"},
+		Statuses: []audit.ToolStatus{{
+			Tool:   "zap",
+			Status: "done",
+		}},
+		RawFiles: []string{"/tmp/raw/zap.json"},
+	}, []string{"zap"})
+	seen := map[string]audit.Result{}
+	for _, result := range results {
+		seen[result.CheckID] = result
+	}
+	got, ok := seen["auth.insecure_authentication_signal"]
+	if !ok {
+		t.Fatal("expected auth.insecure_authentication_signal in zap tool-checks results")
+	}
+	if got.Status != audit.StatusPass {
+		t.Fatalf("status = %s, want pass", got.Status)
 	}
 }

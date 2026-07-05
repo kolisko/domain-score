@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/kolisko/domain-score/internal/audit"
+	"github.com/kolisko/domain-score/internal/catalog"
 )
 
 type ConsoleOptions struct {
@@ -18,14 +19,15 @@ type ConsoleOptions struct {
 func Console(r audit.Report, opts ConsoleOptions) []byte {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "Domain Score: %s  score=%d/100 grade=%s profile=%s aggressive=%t\n\n", r.Target.Domain, r.Score.Overall, r.Score.Grade, r.Profile, r.Aggressive)
-	fmt.Fprintf(&b, "%-6s  %-22s  %-42s  %-8s  %s\n", "STATUS", "CATEGORY", "CHECK", "WEIGHT", "TITLE")
-	fmt.Fprintf(&b, "%-6s  %-22s  %-42s  %-8s  %s\n", "------", "----------------------", "------------------------------------------", "------", "-----")
+	fmt.Fprintf(&b, "%-6s  %-22s  %-42s  %-8s  %-28s  %s\n", "STATUS", "CATEGORY", "CHECK", "WEIGHT", "SOURCE", "TITLE")
+	fmt.Fprintf(&b, "%-6s  %-22s  %-42s  %-8s  %-28s  %s\n", "------", "----------------------", "------------------------------------------", "------", "------", "-----")
 	for _, res := range sortedResults(r.Results, opts.Sort) {
-		fmt.Fprintf(&b, "%s  %-22s  %-42s  %6d    %s\n",
+		fmt.Fprintf(&b, "%s  %-22s  %-42s  %6d    %-28s  %s\n",
 			consoleStatusCell(res.Status, opts.Color, 6),
 			truncate(res.Category, 22),
 			truncate(res.CheckID, 42),
 			res.Weight,
+			truncate(resultSource(res), 28),
 			res.Title,
 		)
 		if res.Status == audit.StatusWarn || res.Status == audit.StatusFail || res.Status == audit.StatusError {
@@ -34,12 +36,65 @@ func Console(r audit.Report, opts ConsoleOptions) []byte {
 				detail = res.Error
 			}
 			if strings.TrimSpace(detail) != "" {
-				fmt.Fprintf(&b, "        %-22s  %-42s            %s\n", "", "", truncate(detail, 110))
+				fmt.Fprintf(&b, "        %-22s  %-42s            %-28s  %s\n", "", "", "", truncate(detail, 110))
 			}
 		}
 	}
 	writeConsoleDetails(&b, r, opts)
 	return b.Bytes()
+}
+
+func resultSource(res audit.Result) string {
+	if labels := evidenceStringList(res.Evidence["sources"]); len(labels) > 0 {
+		return strings.Join(labels, ",")
+	}
+	if labels := evidenceStringList(res.Evidence["tools"]); len(labels) > 0 {
+		for i, label := range labels {
+			labels[i] = "tool:" + label
+		}
+		return strings.Join(labels, ",")
+	}
+	if cat, err := catalog.LoadEmbedded(); err == nil {
+		if check, ok := cat.FindCheck(res.CheckID); ok {
+			labels := check.SourceLabels()
+			if len(labels) > 0 {
+				return strings.Join(labels, ",")
+			}
+		}
+	}
+	if strings.HasPrefix(res.CheckID, "tools.") {
+		return "tool"
+	}
+	if strings.TrimSpace(res.CheckID) == "" {
+		return "-"
+	}
+	return "internal:" + res.CheckID
+}
+
+func evidenceStringList(value any) []string {
+	out := []string{}
+	switch v := value.(type) {
+	case nil:
+		return nil
+	case string:
+		if strings.TrimSpace(v) != "" {
+			out = append(out, strings.TrimSpace(v))
+		}
+	case []string:
+		for _, item := range v {
+			if strings.TrimSpace(item) != "" {
+				out = append(out, strings.TrimSpace(item))
+			}
+		}
+	case []any:
+		for _, item := range v {
+			text := strings.TrimSpace(fmt.Sprint(item))
+			if text != "" {
+				out = append(out, text)
+			}
+		}
+	}
+	return out
 }
 
 func writeConsoleDetails(b *bytes.Buffer, r audit.Report, opts ConsoleOptions) {

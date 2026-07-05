@@ -140,6 +140,29 @@ func (c *Catalog) FindCheck(id string) (Check, bool) {
 	return Check{}, false
 }
 
+func (c *Catalog) ChecksForTools(tools []string) []Check {
+	want := map[string]bool{}
+	for _, tool := range tools {
+		tool = strings.TrimSpace(tool)
+		if tool != "" {
+			want[tool] = true
+		}
+	}
+	if len(want) == 0 {
+		return nil
+	}
+	out := []Check{}
+	for _, check := range c.Checks {
+		for _, tool := range check.ToolNames() {
+			if want[tool] {
+				out = append(out, check)
+				break
+			}
+		}
+	}
+	return out
+}
+
 func (c *Catalog) SourceAccessByID(id string) (SourceAccess, bool) {
 	for _, source := range c.Access {
 		if source.ID == id {

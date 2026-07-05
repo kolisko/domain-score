@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -176,9 +177,11 @@ func runContainer(ctx context.Context, target audit.Target, image string, select
 	_ = os.Remove(cidFile)
 	args := DockerRunArgs(image, cacheDir, target.Domain, url, selected, cidFile)
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
+	logs := &toolLogFilter{dst: os.Stderr}
+	cmd.Stdout = logs
+	cmd.Stderr = logs
 	err := cmd.Run()
+	logs.Flush()
 	if ctx.Err() != nil {
 		cleanupContainer(cidFile)
 		return fmt.Errorf("tools container timed out: %w", ctx.Err())
@@ -188,6 +191,60 @@ func runContainer(ctx context.Context, target audit.Target, image string, select
 		return fmt.Errorf("tools container failed: %v", err)
 	}
 	return nil
+}
+
+type toolLogFilter struct {
+	dst io.Writer
+	buf []byte
+}
+
+func (w *toolLogFilter) Write(p []byte) (int, error) {
+	for _, b := range p {
+		w.buf = append(w.buf, b)
+		if b == '\n' {
+			w.Flush()
+		}
+	}
+	return len(p), nil
+}
+
+func (w *toolLogFilter) Flush() {
+	if len(w.buf) == 0 {
+		return
+	}
+	line := strings.TrimRight(string(w.buf), "\r\n")
+	w.buf = w.buf[:0]
+	if shouldHideToolLogLine(line) {
+		return
+	}
+	fmt.Fprintln(w.dst, line)
+}
+
+func shouldHideToolLogLine(line string) bool {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return true
+	}
+	prefixes := []string{
+		"PASS:",
+		"WARN-NEW:",
+		"WARN-INPROG:",
+		"FAIL-NEW:",
+		"FAIL-INPROG:",
+		"INFO:",
+		"IGNORE:",
+		"Using the Automation Framework",
+		"Total of ",
+	}
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(line, prefix) {
+			return true
+		}
+	}
+	if strings.HasPrefix(line, "http://") || strings.HasPrefix(line, "https://") {
+		return true
+	}
+	return false
 }
 
 func DockerRunArgs(image string, cacheDir string, domain string, url string, selected []string, cidFile string) []string {

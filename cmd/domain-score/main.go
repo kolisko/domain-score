@@ -48,6 +48,7 @@ type scanFlags struct {
 	detailCheck   string
 	check         string
 	tools         string
+	toolChecks    string
 	toolRuntime   string
 	toolsImage    string
 	toolsPull     string
@@ -108,6 +109,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
   domain-score scan example.com --details-check dns.dmarc
   domain-score scan example.com --check dns.dmarc
   domain-score scan example.com --check network.open_ports
+  domain-score scan example.com --tool-checks zap
   domain-score scan example.com --aggressive
   domain-score scan example.com --enable aggressive.port_scan`,
 		Args: argsWithHelp(cobra.ExactArgs(1)),
@@ -149,6 +151,21 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 			if flags.check != "" && (len(flags.enable) > 0 || len(flags.disable) > 0) {
 				return fmt.Errorf("--check cannot be combined with --enable or --disable")
 			}
+			toolCheckSources := []string{}
+			if strings.TrimSpace(flags.toolChecks) != "" {
+				if flags.check != "" {
+					return fmt.Errorf("--tool-checks cannot be combined with --check")
+				}
+				if flags.tools != "none" {
+					return fmt.Errorf("--tool-checks cannot be combined with --tools")
+				}
+				toolCheckSources, err = exttools.ExpandList(flags.toolChecks)
+				if err != nil {
+					return err
+				}
+				flags.tools = strings.Join(toolCheckSources, ",")
+				selectedTools = toolCheckSources
+			}
 			if toolsOverride != "" {
 				flags.tools = toolsOverride
 				selectedTools, err = exttools.ExpandList(flags.tools)
@@ -182,6 +199,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 				},
 				CheckID:       runCheckID,
 				ReportCheckID: reportCheckID,
+				ToolChecks:    toolCheckSources,
 			})
 			if err != nil {
 				return err
@@ -207,6 +225,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().StringVar(&flags.detailCheck, "details-check", "", "Add detailed explanation for one specific check ID")
 	cmd.Flags().StringVar(&flags.check, "check", "", "Run one internal or catalog atomic check ID")
 	cmd.Flags().StringVar(&flags.tools, "tools", "none", "External Docker tools: none, all, projectdiscovery, or comma-separated tool names")
+	cmd.Flags().StringVar(&flags.toolChecks, "tool-checks", "", "Run canonical atomic checks backed by one or more tools, e.g. zap,nuclei")
 	cmd.Flags().StringVar(&flags.toolRuntime, "tool-runtime", "docker", "External tools runtime: docker")
 	cmd.Flags().StringVar(&flags.toolsImage, "tools-image", exttools.DefaultImage(version), "Docker image for external tools")
 	cmd.Flags().StringVar(&flags.toolsPull, "tools-pull", "auto", "External tools image pull policy: auto, always, never")
@@ -287,7 +306,7 @@ func writeOutputs(r audit.Report, flags scanFlags) error {
 			data = report.MarkdownWithOptions(r, report.MarkdownOptions{Sort: flags.sort, Details: flags.details, DetailsCheck: flags.detailCheck})
 			name = "report.md"
 		case "console", "text":
-			data = report.Console(r, report.ConsoleOptions{Color: !flags.noColor, Sort: flags.sort, Details: flags.details, DetailsCheck: flags.detailCheck})
+			data = report.Console(r, report.ConsoleOptions{Color: flags.out == "-" && !flags.noColor, Sort: flags.sort, Details: flags.details, DetailsCheck: flags.detailCheck})
 			name = "report.txt"
 		default:
 			return fmt.Errorf("unsupported format %q", f)
