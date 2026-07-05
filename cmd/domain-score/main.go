@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -76,7 +77,11 @@ such as example.com, or a URL such as https://example.com.`,
 		SilenceErrors: true,
 	}
 	root.AddCommand(scanCommand(), toolsCommand(), historyCommand(), listCommand(), listChecksCommand(), explainCommand(), updateCommand(), versionCommand())
+	configureInputErrorHelp(root)
 	if err := root.ExecuteContext(ctx); err != nil {
+		if isHelpError(err) {
+			os.Exit(1)
+		}
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -105,7 +110,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
   domain-score scan example.com --check network.open_ports
   domain-score scan example.com --aggressive
   domain-score scan example.com --enable aggressive.port_scan`,
-		Args: cobra.ExactArgs(1),
+		Args: argsWithHelp(cobra.ExactArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := ensureLatestVersion(cmd.Context()); err != nil {
 				return err
@@ -345,7 +350,7 @@ func historyCommand() *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "list [domain]",
 		Short: "List stored scan runs",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  argsWithHelp(cobra.MaximumNArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			domain := ""
 			if len(args) > 0 {
@@ -374,7 +379,7 @@ func historyCommand() *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "show <domain> [run|latest]",
 		Short: "Show one stored scan summary and artifact paths",
-		Args:  cobra.RangeArgs(1, 2),
+		Args:  argsWithHelp(cobra.RangeArgs(1, 2)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			runDir, runID, err := resolveHistoryRun(args)
 			if err != nil {
@@ -400,7 +405,7 @@ func historyCommand() *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "findings <domain> [run|latest]",
 		Short: "Show normalized external tool findings for a stored run",
-		Args:  cobra.RangeArgs(1, 2),
+		Args:  argsWithHelp(cobra.RangeArgs(1, 2)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			runDir, _, err := resolveHistoryRun(args)
 			if err != nil {
@@ -425,7 +430,7 @@ func historyCommand() *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "raw <domain> [run|latest]",
 		Short: "List raw external tool files for a stored run",
-		Args:  cobra.RangeArgs(1, 2),
+		Args:  argsWithHelp(cobra.RangeArgs(1, 2)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			runDir, _, err := resolveHistoryRun(args)
 			if err != nil {
@@ -620,7 +625,7 @@ func explainCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "explain <check-id>",
 		Short: "Explain one internal or catalog atomic check",
-		Args:  cobra.ExactArgs(1),
+		Args:  argsWithHelp(cobra.ExactArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			for _, check := range checks.Registry() {
 				m := check.Meta()
@@ -696,7 +701,7 @@ func updateCommand() *cobra.Command {
 architecture, verify the GitHub sha256 digest when available, extract the
 domain-score binary, and replace the currently running executable.`,
 		Example: `  domain-score update`,
-		Args:    cobra.NoArgs,
+		Args:    argsWithHelp(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Minute)
 			defer cancel()
@@ -759,4 +764,49 @@ func splitCSV(raw string) []string {
 		}
 	}
 	return out
+}
+
+type helpError struct {
+	err error
+}
+
+func (h helpError) Error() string {
+	if h.err == nil {
+		return ""
+	}
+	return h.err.Error()
+}
+
+func (h helpError) Unwrap() error {
+	return h.err
+}
+
+func isHelpError(err error) bool {
+	var h helpError
+	return errors.As(err, &h)
+}
+
+func configureInputErrorHelp(cmd *cobra.Command) {
+	cmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		return helpForInputError(cmd, err)
+	})
+	for _, child := range cmd.Commands() {
+		configureInputErrorHelp(child)
+	}
+}
+
+func argsWithHelp(validate cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := validate(cmd, args); err != nil {
+			return helpForInputError(cmd, err)
+		}
+		return nil
+	}
+}
+
+func helpForInputError(cmd *cobra.Command, err error) error {
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	_ = cmd.Help()
+	return helpError{err: err}
 }

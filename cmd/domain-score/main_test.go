@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestSplitCSV(t *testing.T) {
@@ -118,4 +120,58 @@ func TestResolveSingleCheckCatalogTool(t *testing.T) {
 	if runID != "" || reportID != "network.open_ports" || tools != "naabu" {
 		t.Fatalf("resolve = %q %q %q", runID, reportID, tools)
 	}
+}
+
+func TestMissingScanArgPrintsScanHelp(t *testing.T) {
+	out := executeExpectHelp(t, scanCommand())
+	for _, want := range []string{"scan <domain-or-url>", "--check", "--tools", "--format"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("scan help missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestMissingExplainArgPrintsExplainHelp(t *testing.T) {
+	out := executeExpectHelp(t, explainCommand())
+	if !strings.Contains(out, "explain <check-id>") {
+		t.Fatalf("explain help missing command use:\n%s", out)
+	}
+}
+
+func TestMissingHistoryShowArgPrintsSubcommandHelp(t *testing.T) {
+	cmd := historyCommand()
+	cmd.SetArgs([]string{"show"})
+	out := executeExpectHelp(t, cmd)
+	if !strings.Contains(out, "show <domain> [run|latest]") {
+		t.Fatalf("history show help missing command use:\n%s", out)
+	}
+}
+
+func TestMissingFlagValuePrintsCommandHelp(t *testing.T) {
+	cmd := scanCommand()
+	configureInputErrorHelp(cmd)
+	cmd.SetArgs([]string{"--check"})
+	out := executeExpectHelp(t, cmd)
+	for _, want := range []string{"scan <domain-or-url>", "--check", "--tools"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("scan flag help missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func executeExpectHelp(t *testing.T, cmd *cobra.Command) string {
+	t.Helper()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected helpError")
+	} else if !isHelpError(err) {
+		t.Fatalf("error = %T %v, want helpError", err, err)
+	}
+	if errOut.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", errOut.String())
+	}
+	return out.String()
 }
