@@ -9,8 +9,8 @@ import (
 const (
 	RuntimeDocker = "docker"
 
-	DefaultImageRef = "ghcr.io/kolisko/domain-score-tools@sha256:cb37a7f59a1608fe39f77b3329e4d4021dca0994d42961a9d5f1b8b62211d72e"
-	DefaultImageTag = "tools-v0.1.2"
+	DefaultImageRef = "ghcr.io/kolisko/domain-score-tools@sha256:6a816666709aa1e687e040a755bb8efa152c1ef04f5934970ca08a01f185d5de"
+	DefaultImageTag = "tools-v0.1.4"
 
 	PullAuto   = "auto"
 	PullAlways = "always"
