@@ -82,6 +82,20 @@ func TestSelectOneAggressiveCheckWithoutProfile(t *testing.T) {
 	}
 }
 
+func TestSelectToolOnlyCatalogCheckDoesNotRunDefaultChecks(t *testing.T) {
+	checks := []audit.Check{
+		fakeCheck{meta: audit.CheckMeta{ID: "safe.one", Mode: audit.ModeSafe, Weight: 1}},
+		fakeCheck{meta: audit.CheckMeta{ID: "safe.two", Mode: audit.ModeSafe, Weight: 1}},
+	}
+	got, err := Select(checks, Options{ReportCheckID: "auth.insecure_authentication_signal"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("selected %d internal checks for tool-only catalog check, want 0", len(got))
+	}
+}
+
 func TestAtomicToolResultUsesCatalogCheckID(t *testing.T) {
 	result := atomicToolResult(audit.ToolObservation{
 		Enabled:  true,

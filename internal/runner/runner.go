@@ -39,11 +39,14 @@ func Run(ctx context.Context, target audit.Target, opts Options) (audit.Report, 
 	if len(selected) == 0 && len(selectedTools) == 0 {
 		return audit.Report{}, fmt.Errorf("no checks selected")
 	}
-	ev := netx.Collect(ctx, target, netx.Options{
-		Aggressive: includesAggressive(selected),
-		Timeout:    opts.Timeout,
-		UserAgent:  opts.UserAgent,
-	})
+	ev := audit.SharedEvidence{}
+	if len(selected) > 0 {
+		ev = netx.Collect(ctx, target, netx.Options{
+			Aggressive: includesAggressive(selected),
+			Timeout:    opts.Timeout,
+			UserAgent:  opts.UserAgent,
+		})
+	}
 	results := make([]audit.Result, 0, len(selected))
 	for _, check := range selected {
 		meta := check.Meta()
@@ -98,6 +101,9 @@ func Select(all []audit.Check, opts Options) ([]audit.Check, error) {
 	weights, err := parseWeights(opts.WeightsYAML)
 	if err != nil {
 		return nil, err
+	}
+	if opts.CheckID == "" && opts.ReportCheckID != "" {
+		return []audit.Check{}, nil
 	}
 	enable := set(opts.Enable)
 	disable := set(opts.Disable)
