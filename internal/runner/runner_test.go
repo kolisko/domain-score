@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/kolisko/domain-score/internal/audit"
+	"github.com/kolisko/domain-score/internal/catalog"
 )
 
 type fakeCheck struct {
@@ -158,7 +159,7 @@ func TestAtomicToolResultsForFindingsExpandsCanonicalChecks(t *testing.T) {
 	}
 }
 
-func TestAtomicToolResultsForToolsIncludesPassingToolChecks(t *testing.T) {
+func TestAtomicToolResultsForToolsDoesNotFakePassExternalRawChecks(t *testing.T) {
 	results := atomicToolResultsForTools(audit.ToolObservation{
 		Enabled:  true,
 		Selected: []string{"zap"},
@@ -176,7 +177,105 @@ func TestAtomicToolResultsForToolsIncludesPassingToolChecks(t *testing.T) {
 	if !ok {
 		t.Fatal("expected auth.insecure_authentication_signal in zap tool-checks results")
 	}
+	if got.Status != audit.StatusNotApplicable {
+		t.Fatalf("status = %s, want not_applicable", got.Status)
+	}
+}
+
+func TestAtomicToolResultsForToolsCanPassImplementedChecksWithNegativeEvidence(t *testing.T) {
+	results := atomicToolResultsForTools(audit.ToolObservation{
+		Enabled:  true,
+		Selected: []string{"zap"},
+		Statuses: []audit.ToolStatus{{
+			Tool:   "zap",
+			Status: "done",
+		}},
+		RawFiles: []string{"/tmp/raw/zap.json"},
+	}, []string{"zap"})
+	seen := map[string]audit.Result{}
+	for _, result := range results {
+		seen[result.CheckID] = result
+	}
+	got, ok := seen["http.frame_protection_missing"]
+	if !ok {
+		t.Fatal("expected http.frame_protection_missing in zap tool-checks results")
+	}
 	if got.Status != audit.StatusPass {
 		t.Fatalf("status = %s, want pass", got.Status)
+	}
+}
+
+func TestAtomicToolResultsForToolsDoesNotPassPlannedChecks(t *testing.T) {
+	results := atomicToolResultsForTools(audit.ToolObservation{
+		Enabled:  true,
+		Selected: []string{"nuclei"},
+		Statuses: []audit.ToolStatus{{
+			Tool:   "nuclei",
+			Status: "done",
+		}},
+		RawFiles: []string{"/tmp/raw/nuclei.jsonl"},
+	}, []string{"nuclei"})
+	seen := map[string]audit.Result{}
+	for _, result := range results {
+		seen[result.CheckID] = result
+	}
+	got, ok := seen["nuclei.cloud_misconfiguration"]
+	if !ok {
+		t.Fatal("expected nuclei.cloud_misconfiguration in nuclei tool-checks results")
+	}
+	if got.Status != audit.StatusNotApplicable {
+		t.Fatalf("status = %s, want not_applicable", got.Status)
+	}
+}
+
+func TestAtomicToolResultsForToolsDoesNotPassNonOperationalWrappers(t *testing.T) {
+	results := atomicToolResultsForTools(audit.ToolObservation{
+		Enabled:  true,
+		Selected: []string{"internetnl"},
+		Statuses: []audit.ToolStatus{{
+			Tool:   "internetnl",
+			Status: "done",
+		}},
+		RawFiles: []string{"/tmp/raw/internetnl.json"},
+		Findings: []audit.ToolFinding{{
+			Tool:  "internetnl",
+			Type:  "tool_status",
+			Title: "Internet.nl local source is present in the tools image",
+		}},
+	}, []string{"internetnl"})
+	for _, result := range results {
+		if result.Status == audit.StatusPass {
+			t.Fatalf("%s returned pass without operational internetnl evidence", result.CheckID)
+		}
+	}
+}
+
+func TestAtomicToolResultsForAllCatalogChecksAvoidFakePass(t *testing.T) {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tools := []string{"subfinder", "httpx", "naabu", "nuclei", "amass", "testssl", "zap", "internetnl", "greenbone"}
+	obs := audit.ToolObservation{
+		Enabled:  true,
+		Selected: tools,
+	}
+	for _, tool := range tools {
+		obs.Statuses = append(obs.Statuses, audit.ToolStatus{Tool: tool, Status: "done"})
+		obs.RawFiles = append(obs.RawFiles, "/tmp/raw/"+tool+".json")
+	}
+	results := atomicToolResultsForTools(obs, tools)
+	if len(results) == 0 {
+		t.Fatal("expected tool-backed catalog results")
+	}
+	checksByID := map[string]catalog.Check{}
+	for _, check := range cat.Checks {
+		checksByID[check.ID] = check
+	}
+	for _, result := range results {
+		check := checksByID[result.CheckID]
+		if result.Status == audit.StatusPass && !canPassWithoutFinding(check) {
+			t.Fatalf("%s returned fake pass with coverage_status=%s", result.CheckID, check.CoverageStatus)
+		}
 	}
 }

@@ -246,12 +246,32 @@ func atomicToolResultsForTools(obs audit.ToolObservation, tools []string) []audi
 
 func atomicCatalogToolResult(obs audit.ToolObservation, check catalog.Check, findings []audit.ToolFinding) audit.Result {
 	status := audit.StatusPass
+	recommendation := check.Remediation
+	reason := ""
 	if len(obs.Errors) > 0 && len(obs.RawFiles) == 0 && len(findings) == 0 {
 		status = audit.StatusError
+		reason = "tool runtime produced errors and no raw evidence"
 	} else if len(findings) > 0 {
-		status = highestFindingStatus(findings)
+		if onlyStatusFindings(findings) {
+			status = audit.StatusNotApplicable
+			reason = "tool returned status metadata, not audit evidence for this atomic check"
+		} else {
+			status = highestFindingStatus(findings)
+			reason = "mapped tool finding exists"
+		}
+	} else if !toolEvidenceAvailable(obs, check) {
+		status = audit.StatusError
+		reason = "selected tool did not produce operational audit evidence for this atomic check"
+		recommendation = "Zkontrolujte raw výstupy a integraci daného nástroje; check nelze hodnotit bez skutečné evidence."
+	} else if !canPassWithoutFinding(check) {
+		status = audit.StatusNotApplicable
+		reason = "check is cataloged, but negative evidence is not implemented strongly enough to prove a PASS"
+		recommendation = "Tento atomic check je v katalogu, ale zatím nemá plnou runtime normalizaci pro průkazný negativní výsledek."
 	} else if strings.HasPrefix(check.ID, "inventory.") {
 		status = audit.StatusWarn
+		reason = "inventory-capable tool completed but returned no inventory records"
+	} else {
+		reason = "implemented source completed and returned no mapped findings"
 	}
 	return audit.Result{
 		CheckID:        check.ID,
@@ -262,9 +282,95 @@ func atomicCatalogToolResult(obs audit.ToolObservation, check catalog.Check, fin
 		Severity:       audit.Severity(check.Severity),
 		Weight:         check.Weight,
 		ScoreImpact:    atomicScoreImpact(status, check.Weight, findings),
-		Evidence:       map[string]any{"findings": findings, "count": len(findings), "tools": obs.Selected, "sources": selectedToolSourceLabels(obs.Selected, check), "errors": obs.Errors},
-		Recommendation: check.Remediation,
+		Evidence:       map[string]any{"findings": findings, "count": len(findings), "tools": obs.Selected, "sources": selectedToolSourceLabels(obs.Selected, check), "errors": obs.Errors, "coverage_status": check.CoverageStatus, "reason": reason},
+		Recommendation: recommendation,
 	}
+}
+
+func onlyStatusFindings(findings []audit.ToolFinding) bool {
+	if len(findings) == 0 {
+		return false
+	}
+	for _, finding := range findings {
+		if !strings.EqualFold(strings.TrimSpace(finding.Type), "tool_status") {
+			return false
+		}
+	}
+	return true
+}
+
+func canPassWithoutFinding(check catalog.Check) bool {
+	switch strings.TrimSpace(check.CoverageStatus) {
+	case "implemented":
+		return true
+	case "partial":
+		return true
+	default:
+		return false
+	}
+}
+
+func toolEvidenceAvailable(obs audit.ToolObservation, check catalog.Check) bool {
+	statuses := map[string]audit.ToolStatus{}
+	for _, status := range obs.Statuses {
+		if strings.TrimSpace(status.Tool) != "" {
+			statuses[status.Tool] = status
+		}
+	}
+	selected := set(obs.Selected)
+	for _, tool := range check.ToolNames() {
+		if len(selected) > 0 && !selected[tool] {
+			continue
+		}
+		if !toolCompleted(statuses[tool]) {
+			continue
+		}
+		if toolRequiresPositiveOperationalFinding(tool) {
+			if hasNonStatusFindingForTool(obs.Findings, tool) {
+				return true
+			}
+			continue
+		}
+		if hasRawFileForTool(obs.RawFiles, tool) {
+			return true
+		}
+		if hasNonStatusFindingForTool(obs.Findings, tool) {
+			return true
+		}
+	}
+	return false
+}
+
+func toolCompleted(status audit.ToolStatus) bool {
+	return status.Tool != "" && status.ExitCode == 0 && strings.EqualFold(strings.TrimSpace(status.Status), "done")
+}
+
+func toolRequiresPositiveOperationalFinding(tool string) bool {
+	switch tool {
+	case "internetnl", "greenbone":
+		return true
+	default:
+		return false
+	}
+}
+
+func hasNonStatusFindingForTool(findings []audit.ToolFinding, tool string) bool {
+	for _, finding := range findings {
+		if finding.Tool == tool && !strings.EqualFold(strings.TrimSpace(finding.Type), "tool_status") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasRawFileForTool(rawFiles []string, tool string) bool {
+	for _, raw := range rawFiles {
+		base := strings.TrimSpace(raw)
+		if strings.Contains(base, "/"+tool+".") || strings.HasPrefix(base, tool+".") || strings.Contains(base, "\\"+tool+".") {
+			return true
+		}
+	}
+	return false
 }
 
 func selectedToolSourceLabels(selected []string, check catalog.Check) []string {

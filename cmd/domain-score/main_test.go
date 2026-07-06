@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kolisko/domain-score/internal/catalog"
 	"github.com/spf13/cobra"
 )
 
@@ -143,6 +144,30 @@ func TestResolveSingleCheckCatalogTool(t *testing.T) {
 	}
 	if runID != "" || reportID != "network.open_ports" || tools != "naabu" {
 		t.Fatalf("resolve = %q %q %q", runID, reportID, tools)
+	}
+}
+
+func TestResolveEveryCatalogCheckExplicitly(t *testing.T) {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, check := range cat.Checks {
+		t.Run(check.ID, func(t *testing.T) {
+			runID, reportID, tools, err := resolveSingleCheck(check.ID, "none")
+			if err != nil {
+				if !strings.Contains(err.Error(), "not runnable yet") {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if runID == "" && reportID == "" && tools == "" {
+				t.Fatal("resolved to empty runtime path")
+			}
+			if reportID != "" && reportID != check.ID {
+				t.Fatalf("reportID=%q, want %q", reportID, check.ID)
+			}
+		})
 	}
 }
 

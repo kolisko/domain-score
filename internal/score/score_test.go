@@ -26,3 +26,19 @@ func TestCalculateScoresWarnAndFailImpact(t *testing.T) {
 		t.Fatalf("grade = %s, want F", got.Grade)
 	}
 }
+
+func TestCalculateReturnsNAWhenNothingIsScorable(t *testing.T) {
+	got := Calculate([]audit.Result{
+		{Category: "standards", Status: audit.StatusNotApplicable, Weight: 7},
+		{Category: "external_tools", Status: audit.StatusError, Weight: 8},
+	})
+	if got.Overall != 0 {
+		t.Fatalf("overall = %d, want 0", got.Overall)
+	}
+	if got.Grade != "N/A" {
+		t.Fatalf("grade = %s, want N/A", got.Grade)
+	}
+	if len(got.Categories) != 0 {
+		t.Fatalf("categories = %#v, want empty", got.Categories)
+	}
+}

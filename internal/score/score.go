@@ -36,6 +36,8 @@ func Calculate(results []audit.Result) audit.ScoreSummary {
 	overall := 100
 	if total > 0 {
 		overall = clamp((passed * 100) / total)
+	} else if len(results) > 0 {
+		return audit.ScoreSummary{Overall: 0, Grade: "N/A", Categories: cats}
 	}
 	return audit.ScoreSummary{Overall: overall, Grade: grade(overall), Categories: cats}
 }
