@@ -1,15 +1,15 @@
 # Domain Score Release Atomic Check Audit
 
-- Generated: 2026-07-06T07:06:21Z
-- Binary: `domain-score 0.7.6-dev (audit-local, 2026-07-06T00:00:00Z)`
+- Generated: 2026-07-06T07:21:55Z
+- Binary: `domain-score 0.7.6 (d5feca9a38aa36db9330a1820fd8ca2c9e762d5f, 2026-07-06T07:12:18Z)`
 - Target: `example.com`
 - Checks: 299
 
 ## Summary
 
 - `real_fail`: 8
-- `real_pass`: 43
-- `real_warn`: 30
+- `real_pass`: 42
+- `real_warn`: 31
 - `tool_unavailable`: 32
 - `unsupported`: 186
 
@@ -32,7 +32,7 @@ No fake results detected.
 | 9 | `dns.txt_records_present` | pass | implemented | real_pass |
 | 10 | `dns.caa_present` | warn | implemented | real_warn |
 | 11 | `dns.dnssec_enabled` | pass | implemented | real_pass |
-| 12 | `dns.ttl_sanity` | pass | implemented | real_pass |
+| 12 | `dns.ttl_sanity` | warn | implemented | real_warn |
 | 13 | `dns.wildcard_enabled` | pass | implemented | real_pass |
 | 14 | `dns.apex_www_canonical` | pass | implemented | real_pass |
 | 15 | `dns.axfr_not_allowed` | pass | implemented | real_pass |
