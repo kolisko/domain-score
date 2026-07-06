@@ -101,6 +101,42 @@ exit 0
 	}
 }
 
+func TestRunCacheRuntimeParsesExistingCacheWithoutDocker(t *testing.T) {
+	cache := t.TempDir()
+	raw := filepath.Join(cache, "raw")
+	if err := os.MkdirAll(raw, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeTestFile(t, filepath.Join(raw, "nuclei.status"), `{"tool":"nuclei","status":"done","exit_code":0}`)
+	writeTestFile(t, filepath.Join(raw, "nuclei.jsonl"), `{"template-id":"cve-test","template-path":"http/cves/2024/cve-test.yaml","matched-at":"https://app.example.com","info":{"name":"Test CVE","severity":"high"}}`+"\n")
+
+	binDir := t.TempDir()
+	dockerPath := filepath.Join(binDir, "docker")
+	if err := os.WriteFile(dockerPath, []byte("#!/usr/bin/env sh\nexit 99\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	oldPath := os.Getenv("PATH")
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+
+	got, err := Run(context.Background(), audit.Target{Domain: "example.com", URLs: []string{"https://example.com"}}, Options{
+		Tools:    "nuclei",
+		Runtime:  RuntimeCache,
+		CacheDir: cache,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Observation.Runtime != RuntimeCache {
+		t.Fatalf("runtime = %q, want cache", got.Observation.Runtime)
+	}
+	if len(got.Observation.Findings) != 1 {
+		t.Fatalf("findings = %#v", got.Observation.Findings)
+	}
+	if got.Observation.Findings[0].AtomicCheckID != "vulnerability.known_cve_detected" {
+		t.Fatalf("atomic_check_id = %q", got.Observation.Findings[0].AtomicCheckID)
+	}
+}
+
 func TestRunCleansDockerContainerOnTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("fake docker shell script is POSIX-only")

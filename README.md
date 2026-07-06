@@ -231,4 +231,14 @@ go run ./cmd/domain-score list internal-checks
 go run ./cmd/domain-score scan example.com --out -
 ```
 
+Release-level atomic check audits run the installed CLI binary as a black box
+against every cataloged atomic check:
+
+```sh
+scripts/audit-release-checks.rb --binary /path/to/domain-score --out /tmp/domain-score-release-audit
+```
+
+The latest committed audit snapshot is in `docs/atomic-check-runtime-audit.md`
+and `docs/atomic-check-runtime-audit.json`.
+
 CI runs tests, `go vet`, govulncheck and CodeQL. Releases are produced by GoReleaser for Linux, macOS and Windows on amd64 and arm64.

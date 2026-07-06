@@ -54,3 +54,21 @@ func TestPrepareCacheDirReplacesLatest(t *testing.T) {
 		t.Fatalf("raw cache dir missing: %v", err)
 	}
 }
+
+func TestPrepareExistingCacheDirRequiresRawDirectory(t *testing.T) {
+	base := t.TempDir()
+	if _, err := prepareExistingCacheDir(base); err == nil {
+		t.Fatal("expected missing raw directory error")
+	}
+	raw := filepath.Join(base, "raw")
+	if err := os.MkdirAll(raw, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	got, err := prepareExistingCacheDir(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != base {
+		t.Fatalf("cache dir = %q, want %q", got, base)
+	}
+}

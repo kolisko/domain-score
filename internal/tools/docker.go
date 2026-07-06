@@ -75,7 +75,12 @@ func Run(ctx context.Context, target audit.Target, opts Options) (RunResult, err
 	if image == "" {
 		image = DefaultImage(opts.Version)
 	}
-	cacheDir, err := prepareCacheDir(opts.CacheDir, target.Domain)
+	var cacheDir string
+	if runtime == RuntimeCache {
+		cacheDir, err = prepareExistingCacheDir(opts.CacheDir)
+	} else {
+		cacheDir, err = prepareCacheDir(opts.CacheDir, target.Domain)
+	}
 	if err != nil {
 		return RunResult{}, err
 	}
@@ -91,6 +96,27 @@ func Run(ctx context.Context, target audit.Target, opts Options) (RunResult, err
 	start := time.Now()
 	statusf("selected tools: %s", strings.Join(selected, ","))
 	statusf("cache: %s", cacheDir)
+	if runtime == RuntimeCache {
+		statusf("using cache runtime; Docker container will not be started")
+		rawFiles, _ := listRawFiles(cacheDir)
+		obs.RawFiles = rawFiles
+		statuses, statusErrors := ParseStatuses(cacheDir)
+		obs.Statuses = statuses
+		findings, parseErrors := ParseCache(cacheDir)
+		obs.Findings = findings
+		if err := writeFindingsFile(cacheDir, findings); err != nil {
+			obs.Errors = append(obs.Errors, err.Error())
+		}
+		obs.Errors = append(obs.Errors, statusErrors...)
+		obs.Errors = append(obs.Errors, parseErrors...)
+		obs.Duration = time.Since(start).String()
+		if len(obs.Errors) > 0 {
+			statusf("completed cache parse with %d error(s) in %s", len(obs.Errors), obs.Duration)
+		} else {
+			statusf("completed cache parse in %s; findings=%d raw_files=%d", obs.Duration, len(obs.Findings), len(obs.RawFiles))
+		}
+		return RunResult{Observation: obs, Results: resultsFromObservation(obs)}, nil
+	}
 	statusf("checking Docker runtime")
 	if err := Doctor(ctx, "docker"); err != nil {
 		obs.Errors = append(obs.Errors, err.Error())
@@ -298,6 +324,21 @@ func prepareCacheDir(base string, domain string) (string, error) {
 	}
 	if err := os.MkdirAll(filepath.Join(cacheDir, "raw"), 0o755); err != nil {
 		return "", err
+	}
+	return cacheDir, nil
+}
+
+func prepareExistingCacheDir(cacheDir string) (string, error) {
+	cacheDir = strings.TrimSpace(cacheDir)
+	if cacheDir == "" {
+		return "", fmt.Errorf("--tools-cache-dir is required when --tool-runtime=cache")
+	}
+	info, err := os.Stat(filepath.Join(cacheDir, "raw"))
+	if err != nil {
+		return "", fmt.Errorf("cache runtime raw directory is not readable at %s: %w", filepath.Join(cacheDir, "raw"), err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("cache runtime raw path is not a directory: %s", filepath.Join(cacheDir, "raw"))
 	}
 	return cacheDir, nil
 }

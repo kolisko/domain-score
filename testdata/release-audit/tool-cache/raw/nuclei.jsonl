@@ -1,0 +1,2 @@
+{"template-id":"cve-fixture","template-path":"http/cves/2024/cve-fixture.yaml","matched-at":"https://www.example.com","info":{"name":"Fixture CVE finding","severity":"high"}}
+{"template-id":"exposure-fixture","template-path":"http/exposures/files/exposure-fixture.yaml","matched-at":"https://www.example.com/.env","info":{"name":"Fixture exposure finding","severity":"medium"}}

@@ -1,0 +1,4 @@
+[
+  {"id":"TLS1","severity":"HIGH","finding":"TLS 1.0 offered","ip":"93.184.216.34"},
+  {"id":"cipher_order","severity":"LOW","finding":"Server cipher order is not enforced","ip":"93.184.216.34"}
+]

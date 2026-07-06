@@ -45,3 +45,14 @@ func TestExpandListRejectsUnknownTool(t *testing.T) {
 		t.Fatal("expected error for unknown tool")
 	}
 }
+
+func TestNormalizeRuntimeSupportsDockerAndCache(t *testing.T) {
+	for _, runtime := range []string{"", "docker", "cache"} {
+		if _, err := NormalizeRuntime(runtime); err != nil {
+			t.Fatalf("NormalizeRuntime(%q): %v", runtime, err)
+		}
+	}
+	if _, err := NormalizeRuntime("native"); err == nil {
+		t.Fatal("expected unsupported runtime error")
+	}
+}

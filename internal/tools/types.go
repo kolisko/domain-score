@@ -8,6 +8,7 @@ import (
 
 const (
 	RuntimeDocker = "docker"
+	RuntimeCache  = "cache"
 
 	DefaultImageRef = "ghcr.io/kolisko/domain-score-tools@sha256:6a816666709aa1e687e040a755bb8efa152c1ef04f5934970ca08a01f185d5de"
 	DefaultImageTag = "tools-v0.1.4"
@@ -59,10 +60,12 @@ func NormalizeRuntime(runtime string) (string, error) {
 	if runtime == "" {
 		return RuntimeDocker, nil
 	}
-	if runtime != RuntimeDocker {
-		return "", fmt.Errorf("unsupported tool runtime %q; use docker", runtime)
+	switch runtime {
+	case RuntimeDocker, RuntimeCache:
+		return runtime, nil
+	default:
+		return "", fmt.Errorf("unsupported tool runtime %q; use docker or cache", runtime)
 	}
-	return runtime, nil
 }
 
 func NormalizePullPolicy(policy string) (string, error) {

@@ -1,0 +1,10 @@
+[
+  {
+    "source": "external_tool",
+    "tool": "greenbone",
+    "asset": "example.com",
+    "type": "tool_status",
+    "severity": "info",
+    "title": "Greenbone wrapper is present but scanner stack is not initialized"
+  }
+]

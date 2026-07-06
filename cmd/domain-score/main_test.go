@@ -147,6 +147,16 @@ func TestResolveSingleCheckCatalogTool(t *testing.T) {
 	}
 }
 
+func TestResolveSingleCheckCatalogUnsupported(t *testing.T) {
+	runID, reportID, tools, err := resolveSingleCheck("tls.grade_summary", "none")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if runID != "" || reportID != "tls.grade_summary" || tools != "" {
+		t.Fatalf("resolve = %q %q %q", runID, reportID, tools)
+	}
+}
+
 func TestResolveEveryCatalogCheckExplicitly(t *testing.T) {
 	cat, err := catalog.LoadEmbedded()
 	if err != nil {

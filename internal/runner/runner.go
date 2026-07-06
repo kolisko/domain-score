@@ -38,6 +38,19 @@ func Run(ctx context.Context, target audit.Target, opts Options) (audit.Report, 
 	}
 	selectedTools, _ := exttools.ExpandList(opts.Tools.Tools)
 	if len(selected) == 0 && len(selectedTools) == 0 {
+		if opts.ReportCheckID != "" {
+			results := []audit.Result{unsupportedCatalogResult(opts.ReportCheckID)}
+			return audit.Report{
+				Target:      target,
+				GeneratedAt: time.Now().UTC(),
+				Profile:     normalizedProfile(opts),
+				Aggressive:  false,
+				Score:       score.Calculate(results),
+				Results:     results,
+				Evidence:    audit.SharedEvidence{},
+				Version:     opts.Version,
+			}, nil
+		}
 		return audit.Report{}, fmt.Errorf("no checks selected")
 	}
 	ev := audit.SharedEvidence{}
@@ -199,6 +212,44 @@ func atomicToolResult(obs audit.ToolObservation, checkID string) audit.Result {
 		}
 	}
 	return atomicCatalogToolResult(obs, check, findings)
+}
+
+func unsupportedCatalogResult(checkID string) audit.Result {
+	cat, err := catalog.LoadEmbedded()
+	if err != nil {
+		return audit.Result{
+			CheckID:        checkID,
+			Title:          checkID,
+			Category:       "catalog",
+			Status:         audit.StatusError,
+			Severity:       audit.SeverityMedium,
+			Recommendation: "Catalog could not be loaded.",
+			Error:          err.Error(),
+		}
+	}
+	check, ok := cat.FindCheck(checkID)
+	if !ok {
+		return audit.Result{
+			CheckID:        checkID,
+			Title:          checkID,
+			Category:       "catalog",
+			Status:         audit.StatusError,
+			Severity:       audit.SeverityMedium,
+			Recommendation: "Unknown catalog check.",
+		}
+	}
+	return audit.Result{
+		CheckID:        check.ID,
+		Title:          check.Title,
+		Category:       check.Category,
+		Mode:           audit.Mode(check.Mode),
+		Status:         audit.StatusNotApplicable,
+		Severity:       audit.Severity(check.Severity),
+		Weight:         check.Weight,
+		ScoreImpact:    0,
+		Evidence:       map[string]any{"coverage_status": check.CoverageStatus, "sources": check.SourceLabels(), "reason": "check is cataloged but has no runnable internal check or supported local tool runtime"},
+		Recommendation: "Tento atomic check je v katalogu, ale aktuální release ho neumí samostatně spustit bez další integrace zdroje.",
+	}
 }
 
 func atomicToolResultsForFindings(obs audit.ToolObservation) []audit.Result {

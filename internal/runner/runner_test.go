@@ -138,6 +138,19 @@ func TestAtomicToolResultUsesCatalogCheckID(t *testing.T) {
 	}
 }
 
+func TestUnsupportedCatalogResultIsNotApplicable(t *testing.T) {
+	result := unsupportedCatalogResult("tls.grade_summary")
+	if result.CheckID != "tls.grade_summary" {
+		t.Fatalf("CheckID = %q", result.CheckID)
+	}
+	if result.Status != audit.StatusNotApplicable {
+		t.Fatalf("Status = %s, want not_applicable", result.Status)
+	}
+	if result.ScoreImpact != 0 {
+		t.Fatalf("ScoreImpact = %d, want 0", result.ScoreImpact)
+	}
+}
+
 func TestAtomicToolResultsForFindingsExpandsCanonicalChecks(t *testing.T) {
 	results := atomicToolResultsForFindings(audit.ToolObservation{
 		Enabled:  true,

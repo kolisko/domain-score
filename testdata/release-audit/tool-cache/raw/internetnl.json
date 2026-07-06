@@ -1,0 +1,10 @@
+[
+  {
+    "source": "external_tool",
+    "tool": "internetnl",
+    "asset": "example.com",
+    "type": "tool_status",
+    "severity": "info",
+    "title": "Internet.nl local source is present but service mode is not enabled"
+  }
+]

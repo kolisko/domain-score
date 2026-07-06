@@ -226,7 +226,7 @@ Default scans are safe/non-invasive. Aggressive checks run only with
 	cmd.Flags().StringVar(&flags.check, "check", "", "Run one internal or catalog atomic check ID")
 	cmd.Flags().StringVar(&flags.tools, "tools", "none", "External Docker tools: none, all, projectdiscovery, or comma-separated tool names")
 	cmd.Flags().StringVar(&flags.toolChecks, "tool-checks", "", "Run canonical atomic checks backed by one or more tools, e.g. zap,nuclei")
-	cmd.Flags().StringVar(&flags.toolRuntime, "tool-runtime", "docker", "External tools runtime: docker")
+	cmd.Flags().StringVar(&flags.toolRuntime, "tool-runtime", "docker", "External tools runtime: docker, cache")
 	cmd.Flags().StringVar(&flags.toolsImage, "tools-image", exttools.DefaultImage(version), "Docker image for external tools")
 	cmd.Flags().StringVar(&flags.toolsPull, "tools-pull", "auto", "External tools image pull policy: auto, always, never")
 	cmd.Flags().DurationVar(&flags.toolsTimeout, "tools-timeout", exttools.DefaultTimeout, "External tools timeout")
@@ -257,7 +257,7 @@ func resolveSingleCheck(checkID string, currentTools string) (string, string, st
 	}
 	tools := dockerToolsForCatalogCheck(check)
 	if len(tools) == 0 {
-		return "", "", "", fmt.Errorf("check %q is cataloged but is not runnable yet", checkID)
+		return "", checkID, "", nil
 	}
 	if selected, _ := exttools.ExpandList(currentTools); len(selected) > 0 {
 		return "", checkID, "", nil
@@ -773,6 +773,9 @@ func versionCommand() *cobra.Command {
 
 func ensureLatestVersion(ctx context.Context) error {
 	if !selfupdate.IsReleaseVersion(version) {
+		return nil
+	}
+	if strings.EqualFold(os.Getenv("DOMAIN_SCORE_SKIP_UPDATE_CHECK"), "1") || strings.EqualFold(os.Getenv("DOMAIN_SCORE_SKIP_UPDATE_CHECK"), "true") {
 		return nil
 	}
 	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)

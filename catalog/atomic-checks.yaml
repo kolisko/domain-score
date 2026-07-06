@@ -391,7 +391,7 @@ checks:
     weight: 6
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [aggressive.axfr]
+      internal_check_ids: [aggressive.dns_axfr]
       tools: [amass]
     finding_cardinality: many
     evidence_model: [nameserver, transfer_status, leaked_records]
@@ -480,7 +480,7 @@ checks:
     weight: 3
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [dns.dkim_common_selectors]
+      internal_check_ids: [dns.dkim]
       tools: [internetnl]
     finding_cardinality: many
     evidence_model: [selector, txt_record]
@@ -1472,7 +1472,7 @@ checks:
     weight: 4
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [http.cors]
+      internal_check_ids: [http.cors_baseline]
       tools: [zap, nuclei]
       zap_plugin_ids: ["10098"]
     finding_cardinality: many
@@ -1566,7 +1566,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [http.coop_coep_corp]
+      internal_check_ids: [http.cross_origin_isolation]
     finding_cardinality: many
     evidence_model: [url, coop, coep, corp]
     rationale: COOP/COEP/CORP reduce cross-origin data leakage and isolation issues.
@@ -1580,7 +1580,7 @@ checks:
     weight: 4
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [aggressive.mixed_content]
+      internal_check_ids: [aggressive.deep_crawl]
       tools: [zap]
       zap_plugin_ids: ["10040"]
     finding_cardinality: many
@@ -1596,7 +1596,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [aggressive.broken_links]
+      internal_check_ids: [aggressive.deep_crawl]
     finding_cardinality: many
     evidence_model: [source_url, target_url, status_code]
     rationale: Broken links reduce trust, crawlability and user experience.
@@ -1625,7 +1625,7 @@ checks:
     weight: 5
     coverage_status: partial
     implemented_by:
-      internal_check_ids: [aggressive.exposed_tokens]
+      internal_check_ids: [aggressive.exposed_token_hints]
       tools: [nuclei, zap]
     finding_cardinality: many
     evidence_model: [url, source_map_url]
@@ -1640,7 +1640,7 @@ checks:
     weight: 8
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [aggressive.exposed_tokens]
+      internal_check_ids: [aggressive.exposed_token_hints]
       tools: [nuclei]
     finding_cardinality: many
     evidence_model: [url, token_type, matched_context]
@@ -2514,7 +2514,7 @@ checks:
     weight: 6
     coverage_status: partial
     implemented_by:
-      internal_check_ids: [aggressive.cve_hints]
+      internal_check_ids: [aggressive.framework_fingerprint]
       tools: [nuclei, httpx, zap, greenbone]
     finding_cardinality: many
     evidence_model: [url, product, detected_version, latest_safe_version, evidence]
@@ -2529,7 +2529,6 @@ checks:
     weight: 7
     coverage_status: partial
     implemented_by:
-      internal_check_ids: [aggressive.takeover_heuristics]
       tools: [nuclei, subfinder, amass]
     finding_cardinality: many
     evidence_model: [hostname, cname, provider, takeover_signal]
@@ -2574,7 +2573,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [transparency.ct_names]
+      internal_check_ids: [transparency.certificate_transparency]
       tools: [subfinder, amass]
     finding_cardinality: many
     evidence_model: [hostname, certificate_log_source]
@@ -2660,7 +2659,7 @@ checks:
     weight: 1
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [transparency.privacy_terms]
+      internal_check_ids: [transparency.policy_pages]
     finding_cardinality: one
     evidence_model: [privacy_url]
     rationale: Public privacy information is expected for most public websites.
@@ -2674,7 +2673,7 @@ checks:
     weight: 1
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [transparency.privacy_terms]
+      internal_check_ids: [transparency.policy_pages]
     finding_cardinality: one
     evidence_model: [terms_url]
     rationale: Terms clarify service use and legal expectations.
@@ -2731,7 +2730,7 @@ checks:
     weight: 3
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [seo.meta_description]
+      internal_check_ids: [seo.description]
     finding_cardinality: one
     evidence_model: [description]
     rationale: Meta description influences search snippets and content clarity.
@@ -2759,7 +2758,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [seo.robots]
+      internal_check_ids: [seo.robots_txt]
     finding_cardinality: one
     evidence_model: [robots_url, status_code]
     rationale: robots.txt communicates crawler policy.
@@ -2829,7 +2828,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [ai.robots_ai]
+      internal_check_ids: [ai.robots_ai_crawlers]
     finding_cardinality: one
     evidence_model: [robots_rules, known_ai_user_agents]
     rationale: Explicit policy clarifies whether AI crawlers may access content.
@@ -2857,7 +2856,7 @@ checks:
     weight: 1
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [ai.docs_faq]
+      internal_check_ids: [ai.docs_faq_signals]
     finding_cardinality: one
     evidence_model: [links, structured_data_types]
     rationale: FAQ and documentation pages help answer extraction and model summarization.
@@ -2871,7 +2870,7 @@ checks:
     weight: 3
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [perf.ttfb]
+      internal_check_ids: [performance.ttfb]
     finding_cardinality: one
     evidence_model: [ttfb_ms]
     rationale: Slow TTFB hurts user experience and crawl efficiency.
@@ -2885,7 +2884,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [perf.html_size]
+      internal_check_ids: [performance.html_size]
     finding_cardinality: one
     evidence_model: [body_size]
     rationale: Large HTML documents slow first render and parsing.
@@ -2899,7 +2898,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [perf.compression]
+      internal_check_ids: [performance.compression]
     finding_cardinality: one
     evidence_model: [content_encoding]
     rationale: Compression reduces transfer size for text resources.
@@ -2913,7 +2912,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [perf.cache_headers]
+      internal_check_ids: [performance.cache_headers]
       tools: [zap]
       zap_plugin_ids: ["10015"]
     finding_cardinality: many
@@ -2929,7 +2928,7 @@ checks:
     weight: 1
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [perf.viewport]
+      internal_check_ids: [performance.viewport]
     finding_cardinality: one
     evidence_model: [viewport]
     rationale: Viewport meta is required for good mobile rendering.
@@ -2943,7 +2942,7 @@ checks:
     weight: 2
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [perf.image_alt]
+      internal_check_ids: [performance.image_alt]
     finding_cardinality: many
     evidence_model: [image_count, missing_alt_count, sample_urls]
     rationale: Missing alt text reduces accessibility and machine understanding.
@@ -2957,7 +2956,7 @@ checks:
     weight: 1
     coverage_status: implemented
     implemented_by:
-      internal_check_ids: [perf.landmarks]
+      internal_check_ids: [performance.landmarks]
     finding_cardinality: one
     evidence_model: [landmark_count]
     rationale: Landmarks help assistive technology navigate the page.
